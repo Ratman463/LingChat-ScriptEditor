@@ -187,7 +187,7 @@ function stopInteraction() {
 
 <template>
   <div 
-    class="w-full h-full bg-gray-950 relative overflow-hidden cursor-grab active:cursor-grabbing select-none"
+    class="w-full h-full relative overflow-hidden cursor-grab active:cursor-grabbing select-none"
     @wheel="handleWheel"
     @mousedown="startPan"
   >

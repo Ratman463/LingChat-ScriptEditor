@@ -26,10 +26,10 @@ function save() {
 </script>
 
 <template>
-  <div class="flex h-screen bg-gray-950 text-white overflow-hidden font-sans">
+  <div class="flex h-screen  text-white overflow-hidden font-sans">
     
     <!-- Main Content (Full Screen Canvas) -->
-    <main class="flex-1 flex flex-col relative bg-gray-950 min-w-0">
+    <main class="flex-1 flex flex-col relative min-w-0">
        <!-- Editor Header -->
        <header class="absolute top-0 left-0 right-0 h-16 pointer-events-none flex items-center px-6 justify-between z-50">
          <div class="bg-gray-900/90 backdrop-blur border border-gray-700 rounded-full px-6 py-2 pointer-events-auto shadow-2xl flex items-center space-x-4">
