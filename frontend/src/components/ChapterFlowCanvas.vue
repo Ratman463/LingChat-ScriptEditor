@@ -347,19 +347,10 @@ function stopInteraction() {
 
 <template>
   <div 
-    class="w-full h-full relative overflow-hidden cursor-grab active:cursor-grabbing select-none"
+    class="w-full h-full relative overflow-auto cursor-grab active:cursor-grabbing select-none"
     @wheel="handleWheel"
     @mousedown="startPan"
   >
-    <!-- Background -->
-    <div 
-        class="absolute inset-0 opacity-20 pointer-events-none"
-        :style="{
-            backgroundImage: 'radial-gradient(circle, #4b5563 1px, transparent 1px)',
-            backgroundSize: `${40 * scale}px ${40 * scale}px`,
-            backgroundPosition: `${panX}px ${panY}px`
-        }"
-    ></div>
 
     <!-- Canvas -->
     <div 
