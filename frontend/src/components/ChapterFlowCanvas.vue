@@ -184,6 +184,7 @@ function handleConnectionMove(e: MouseEvent) {
 }
 
 function endConnection(e: MouseEvent, path: string, side: 'left' | 'right') {
+
     if (!isCreatingConnection.value || !connectionStartNode.value || !connectionStartSide.value) {
         isCreatingConnection.value = false
         connectionStartNode.value = null
@@ -253,19 +254,11 @@ async function createConnection(fromNode: string, fromSide: 'left' | 'right', to
         const fromContent = loadedChapters.value[fromNode]
         if (!fromContent || !fromContent.events) return
 
-        // Find the last event in the fromNode
-        const lastEvent = fromContent.events[fromContent.events.length - 1]
-        
-        // If it's already an end event, update it
-        if (lastEvent && lastEvent.type === 'end') {
-            lastEvent.next = toNode
-        } else {
-            // Create a new end event
-            fromContent.events.push({
-                type: 'end',
-                next: toNode
-            })
-        }
+        // Create a new end event
+        fromContent.events.push({
+            type: 'end',
+            next: toNode
+        })
 
         // Save the updated chapter
         await fetch(`/api/scripts/${props.scriptId}/chapters/${encodeURIComponent(fromNode)}`, {
