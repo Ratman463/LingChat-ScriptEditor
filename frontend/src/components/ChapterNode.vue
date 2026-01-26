@@ -11,7 +11,7 @@ const props = defineProps<{
     y?: number
 }>()
 
-const emit = defineEmits(['update:events', 'select', 'delete', 'add-event', 'toggle-expand'])
+const emit = defineEmits(['update:events', 'select', 'delete', 'add-event', 'toggle-expand', 'start-connection', 'end-connection', 'delete-event', 'swap-events'])
 
 const localEvents = computed({
     get: () => props.events,
@@ -19,6 +19,7 @@ const localEvents = computed({
 })
 
 const expandedEvents = ref<Record<number, boolean>>({})
+const showEventTypeDialog = ref(false)
 
 function toggleEvent(index: number) {
     if (expandedEvents.value[index]) {
@@ -36,11 +37,48 @@ function addOptional(event: any, key: string, schema: any) {
     const field = schema.optional.find((f: any) => f.key === key)
     event[key] = field?.default ?? ''
 }
+
+function handleStartConnection(e: MouseEvent, side: 'left' | 'right') {
+    emit('start-connection', e, props.chapterPath, side)
+}
+
+function handleEndConnection(e: MouseEvent, side: 'left' | 'right') {
+    emit('end-connection', e, props.chapterPath, side)
+}
+
+function handleAddEvent() {
+    showEventTypeDialog.value = true
+}
+
+function selectEventType(type: string) {
+    console.log("select type:", type)
+    emit('add-event', type)
+    showEventTypeDialog.value = false
+}
+
+function getEventDescription(type: string): string {
+    const descriptions: Record<string, string> = {
+        narration: '添加叙述文本',
+        player: '添加玩家对话',
+        dialogue: '添加角色对话',
+        ai_dialogue: '添加AI生成对话',
+        modify_character: '修改角色状态',
+        background: '设置背景图片',
+        music: '播放背景音乐',
+        set_variable: '设置变量值',
+        end: '结束或跳转章节'
+    }
+    return descriptions[type] || '事件描述'
+}
+
+function onDragEnd(event: any) {
+    emit('swap-events', event.moved.oldIndex, event.moved.newIndex)
+}
 </script>
 
 <template>
   <div 
-    class="absolute w-80 rounded-xl border border-gray-700 bg-gray-900/90 shadow-2xl backdrop-blur flex flex-col overflow-hidden"
+    class="absolute w-80 rounded-xl border border-gray-700 bg-gray-900/90 shadow-2xl backdrop-blur flex flex-col overflow-visible"
     :style="{ left: (x || 0) + 'px', top: (y || 0) + 'px' }"
     @mousedown.stop="$emit('select', $event)"
   >
@@ -59,6 +97,7 @@ function addOptional(event: any, key: string, schema: any) {
         item-key="id" 
         class="flex-1 overflow-y-auto max-h-[400px] p-2 space-y-2 scrollbar-thin scrollbar-thumb-gray-700"
         handle=".event-handle"
+        @change="onDragEnd"
     >
         <template #item="{ element, index }">
             <div 
@@ -66,8 +105,8 @@ function addOptional(event: any, key: string, schema: any) {
                 :class="[getEventSchema(element.type).color, expandedEvents[index] ? 'bg-opacity-30' : 'bg-opacity-10']"
             >
                 <!-- Compact Row -->
-                <div class="flex items-center p-2 cursor-pointer hover:bg-white/5" @click="toggleEvent(index)">
-                    <div class="event-handle cursor-move mr-2 opacity-0 group-hover:opacity-50 hover:opacity-100">
+                <div class="flex items-center p-2 cursor-pointer hover:bg-white/5 group" @click="toggleEvent(index)">
+                    <div class="event-handle cursor-move mr-2 opacity-0 group-hover:opacity-50 hover:opacity-100" @mousedown.stop>
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
                     </div>
                     
@@ -79,6 +118,17 @@ function addOptional(event: any, key: string, schema: any) {
 
                     <!-- Indicators -->
                      <span v-if="element.condition" class="w-2 h-2 rounded-full bg-yellow-500 ml-2" title="Has Condition"></span>
+                    
+                    <!-- Delete Button -->
+                    <button 
+                        @click.stop="$emit('delete-event', index)"
+                        class="ml-2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500/20 hover:bg-red-500/40 border border-red-500/30 rounded p-1"
+                        title="Delete Event"
+                    >
+                        <svg class="w-3 h-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
                 </div>
 
                 <!-- Expanded Details -->
@@ -139,7 +189,64 @@ function addOptional(event: any, key: string, schema: any) {
 
     <!-- Footer -->
     <div class="p-2 bg-gray-800/50 border-t border-gray-700">
-        <button @click="$emit('add-event')" class="w-full py-1.5 rounded border border-dashed border-gray-600 text-gray-500 hover:text-purple-400 hover:border-purple-500/50 text-xs transition">+ Add Event</button>
+        <button @click="handleAddEvent" class="w-full py-1.5 rounded border border-dashed border-gray-600 text-gray-500 hover:text-purple-400 hover:border-purple-500/50 text-xs transition">+ Add Event</button>
     </div>
+
+    <!-- Event Type Dialog -->
+    <div v-if="showEventTypeDialog" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl w-full max-w-md">
+            <div class="p-4 border-b border-gray-700">
+                <h3 class="text-lg font-bold text-gray-200">选择事件类型</h3>
+                <p class="text-sm text-gray-400 mt-1">选择要添加的事件类型</p>
+            </div>
+            
+            <div class="p-4 space-y-2 max-h-64 overflow-y-auto">
+                <div 
+                    v-for="(schema, type) in EVENT_SCHEMAS" 
+                    :key="type"
+                    @click="selectEventType(type)"
+                    class="flex items-center p-3 rounded-lg border border-gray-700 hover:border-gray-600 cursor-pointer transition-all group"
+                    :class="schema.color"
+                >
+                    <div class="w-3 h-3 rounded-full mr-3" :class="schema.color.replace('bg-', 'bg-').replace('/20', '')"></div>
+                    <div class="flex-1">
+                        <div class="font-bold text-sm text-gray-200">{{ schema.label }}</div>
+                        <div class="text-xs text-gray-400">{{ getEventDescription(type) }}</div>
+                    </div>
+                    <div class="text-xs text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-4 border-t border-gray-700 flex justify-end">
+                <button 
+                    @click="showEventTypeDialog = false"
+                    class="px-4 py-2 text-gray-400 hover:text-gray-200 transition-colors"
+                >
+                    取消
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Connection Handles -->
+    <!-- Left Handle -->
+    <div 
+        class="absolute left-[-4px] top-1/2 w-2 h-2 bg-white rounded-full border-2 border-gray-300 cursor-pointer hover:bg-purple-200 hover:border-purple-400 transform -translate-y-1/2 z-10"
+        @mousedown.stop="handleStartConnection($event, 'left')"
+        @mouseup.stop="handleEndConnection($event, 'left')"
+        title="连接终点"
+    ></div>
+    
+    <!-- Right Handle -->
+    <div 
+        class="absolute right-[-4px] top-1/2 w-2 h-2 bg-white rounded-full border-2 border-gray-300 cursor-pointer hover:bg-purple-200 hover:border-purple-400 transform -translate-y-1/2 z-10"
+        @mousedown.stop="handleStartConnection($event, 'right')"
+        @mouseup.stop="handleEndConnection($event, 'right')"
+        title="连接起点"
+    ></div>
   </div>
 </template>

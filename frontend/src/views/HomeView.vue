@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { useScriptStore } from '@/stores/script'
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const scriptStore = useScriptStore()
 const router = useRouter()
+
+// State for create script dialog
+const showCreateDialog = ref(false)
+const newScriptName = ref('')
+const newScriptDescription = ref('')
 
 onMounted(() => {
   scriptStore.fetchScripts()
@@ -13,10 +18,73 @@ onMounted(() => {
 function openScript(id: string) {
   router.push(`/editor/${id}`)
 }
+
+function showCreateScript() {
+  showCreateDialog.value = true
+  newScriptName.value = ''
+  newScriptDescription.value = ''
+}
+
+async function createNewScript() {
+  if (!newScriptName.value.trim()) {
+    alert('请输入故事名称')
+    return
+  }
+  
+  try {
+    // Create new script structure
+    const scriptData = {
+      script_name: newScriptName.value.trim(),
+      description: newScriptDescription.value.trim(),
+      intro_charpter: 'chapter1.yaml',
+      script_settings: {
+        user_name: 'Player'
+      }
+    }
+    
+    // Send request to backend API
+    const response = await fetch('/api/scripts', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(scriptData)
+    })
+    
+    if (!response.ok) {
+      throw new Error(`创建脚本失败: ${response.status}`)
+    }
+    
+    const result = await response.json()
+    
+    // Reload scripts to include the new one
+    await scriptStore.fetchScripts()
+    
+    // Close dialog
+    showCreateDialog.value = false
+    
+    // Navigate to the new script
+    if (result.id) {
+      router.push(`/editor/${result.id}`)
+    }
+    
+    console.log(`成功创建脚本: ${newScriptName.value}`)
+    
+  } catch (error) {
+    console.error('创建脚本失败:', error)
+    alert('创建脚本失败，请稍后重试')
+  }
+}
+
+function cancelCreateScript() {
+  showCreateDialog.value = false
+  newScriptName.value = ''
+  newScriptDescription.value = ''
+}
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-900 text-white p-8 font-sans">
+  <div class="min-h-screen text-white p-8 font-sans relative z-1">
     <div class="max-w-6xl mx-auto">
       <h1 class="text-4xl font-extrabold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600 tracking-tight">
         Script Editor
@@ -38,11 +106,65 @@ function openScript(id: string) {
         </div>
         
         <!-- Create New Button -->
-        <div class="bg-gray-800/30 rounded-xl p-6 cursor-pointer hover:bg-gray-800 transition border-2 border-dashed border-gray-700 hover:border-gray-500 flex flex-col items-center justify-center text-gray-500 hover:text-gray-300 h-full min-h-[160px]">
-          <span class="text-5xl mb-2 font-light">+</span>
-          <span class="font-medium">New Script</span>
+        <div 
+          @click="showCreateScript"
+          class="bg-gray-800/30 rounded-xl p-6 cursor-pointer hover:bg-gray-800 transition border-2 border-dashed border-gray-700 hover:border-purple-500 flex flex-col items-center justify-center text-gray-500 hover:text-gray-300 h-full min-h-[160px] group"
+        >
+          <span class="text-5xl mb-2 font-light group-hover:text-purple-400 transition-colors">+</span>
+          <span class="font-medium group-hover:text-purple-300 transition-colors">New Script</span>
         </div>
       </div>
     </div>
+
+    <!-- Create Script Dialog -->
+    <div v-if="showCreateDialog" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl w-full max-w-md">
+            <div class="p-4 border-b border-gray-700">
+                <h3 class="text-lg font-bold text-gray-200">创建新脚本</h3>
+                <p class="text-sm text-gray-400 mt-1">输入故事信息来创建新的脚本项目</p>
+            </div>
+            
+            <div class="p-4 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">故事名称</label>
+                    <input 
+                        v-model="newScriptName"
+                        type="text"
+                        placeholder="例如: 我的冒险故事"
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-purple-500"
+                        @keyup.enter="createNewScript"
+                    />
+                    <p class="text-xs text-gray-500 mt-1">这将是你的故事标题</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">故事描述</label>
+                    <textarea 
+                        v-model="newScriptDescription"
+                        placeholder="简要描述你的故事..."
+                        rows="3"
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-purple-500 resize-none"
+                    ></textarea>
+                    <p class="text-xs text-gray-500 mt-1">可选，帮助你记住故事内容</p>
+                </div>
+            </div>
+            
+            <div class="p-4 border-t border-gray-700 flex justify-end space-x-3">
+                <button 
+                    @click="cancelCreateScript"
+                    class="px-4 py-2 text-gray-400 hover:text-gray-200 transition-colors border border-gray-600 rounded-lg"
+                >
+                    取消
+                </button>
+                <button 
+                    @click="createNewScript"
+                    class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                >
+                    创建脚本
+                </button>
+            </div>
+        </div>
+    </div>
   </div>
 </template>
+
