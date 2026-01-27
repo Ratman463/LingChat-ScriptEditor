@@ -32,41 +32,20 @@ async function createNewScript() {
   }
   
   try {
-    // Create new script structure
-    const scriptData = {
-      script_name: newScriptName.value.trim(),
-      description: newScriptDescription.value.trim(),
-      intro_charpter: 'chapter1.yaml',
-      script_settings: {
-        user_name: 'Player'
-      }
-    }
-    
     // Send request to backend API
-    const response = await fetch('/api/scripts', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(scriptData)
-    })
-    
-    if (!response.ok) {
+    const response = await scriptStore.createScript(newScriptName.value.trim())
+
+    console.log("response:", response)
+
+    if (response.status !== "success") {
       throw new Error(`创建脚本失败: ${response.status}`)
     }
-    
-    const result = await response.json()
     
     // Reload scripts to include the new one
     await scriptStore.fetchScripts()
     
     // Close dialog
     showCreateDialog.value = false
-    
-    // Navigate to the new script
-    if (result.id) {
-      router.push(`/editor/${result.id}`)
-    }
     
     console.log(`成功创建脚本: ${newScriptName.value}`)
     
@@ -121,7 +100,6 @@ function cancelCreateScript() {
         <div class="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl w-full max-w-md">
             <div class="p-4 border-b border-gray-700">
                 <h3 class="text-lg font-bold text-gray-200">创建新脚本</h3>
-                <p class="text-sm text-gray-400 mt-1">输入故事信息来创建新的脚本项目</p>
             </div>
             
             <div class="p-4 space-y-4">
@@ -130,22 +108,10 @@ function cancelCreateScript() {
                     <input 
                         v-model="newScriptName"
                         type="text"
-                        placeholder="例如: 我的冒险故事"
+                        placeholder="例如: 小灵的冒险故事"
                         class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-purple-500"
                         @keyup.enter="createNewScript"
                     />
-                    <p class="text-xs text-gray-500 mt-1">这将是你的故事标题</p>
-                </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">故事描述</label>
-                    <textarea 
-                        v-model="newScriptDescription"
-                        placeholder="简要描述你的故事..."
-                        rows="3"
-                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-purple-500 resize-none"
-                    ></textarea>
-                    <p class="text-xs text-gray-500 mt-1">可选，帮助你记住故事内容</p>
                 </div>
             </div>
             

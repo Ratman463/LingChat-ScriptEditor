@@ -84,9 +84,19 @@ export const useScriptStore = defineStore('script', () => {
       }
   }
 
+  async function createScript(name: string) {
+      try {
+          const response = await axios.post('/api/scripts/create', { name })
+          await fetchScripts()
+          return response.data
+      } catch (e) {
+          alert("Failed to create script: " + e)
+      }
+  }
+
   return { 
       scripts, currentScript, 
       chapters, assets, currentChapterPath, currentChapterContent,
-      fetchScripts, loadScript, loadChapter, saveCurrentChapter 
+      fetchScripts, loadScript, loadChapter, saveCurrentChapter, createScript
   }
 })

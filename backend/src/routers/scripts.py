@@ -5,6 +5,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException, Body
 from typing import List, Optional, Dict, Any
 from ..models import ScriptConfig, Chapter
+from pydantic import BaseModel
 
 router = APIRouter(
     prefix="/api/scripts",
@@ -26,6 +27,7 @@ async def list_scripts():
         return []
     
     for item in BASE_DIR.iterdir():
+        print(item)
         if item.is_dir():
             config_path = item / "story_config.yaml"
             if config_path.exists():
@@ -133,3 +135,51 @@ async def save_chapter(script_id: str, chapter_path: str, chapter: Chapter):
         return {"status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+class StoryUnit(BaseModel):
+    name: str
+
+@router.post("/create")
+async def create_script(unit: StoryUnit):
+    script_name = unit.name
+    script_dir = BASE_DIR / script_name
+    
+    # Check if script already exists
+    if script_dir.exists():
+        raise HTTPException(status_code=400, detail="Script with this name already exists")
+    
+    try:
+        # Create directory structure
+        script_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Create subdirectories
+        (script_dir / "Assests").mkdir(exist_ok=True)
+        (script_dir / "Characters").mkdir(exist_ok=True)
+        (script_dir / "Charpters").mkdir(exist_ok=True)
+        
+        # Create Charpter_1 and Intro subdirectories
+        (script_dir / "Charpters" / "Charpter_1").mkdir(exist_ok=True)
+        (script_dir / "Charpters" / "Intro").mkdir(exist_ok=True)
+        
+        # Create empty story_config.yaml
+        story_config_path = script_dir / "story_config.yaml"
+        # with open(story_config_path, "w", encoding="utf-8") as f:
+        #     f.write(f'script_name: {unit.name}\n')
+        
+        # Create intro.yaml files in Charpter_1 and Intro directories
+        intro_files = [
+            script_dir / "Charpters" / "Charpter_1" / "intro.yaml",
+            script_dir / "Charpters" / "Intro" / "intro.yaml"
+        ]
+        
+        for intro_file in intro_files:
+            with open(intro_file, "w", encoding="utf-8") as f:
+                f.write("# Chapter introduction\n")
+        
+        return {
+            "status": "success",
+            "message": f"Script '{script_name}' created successfully",
+            "script_id": script_name
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create script: {str(e)}")
