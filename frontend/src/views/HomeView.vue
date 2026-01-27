@@ -10,6 +10,8 @@ const router = useRouter()
 const showCreateDialog = ref(false)
 const newScriptName = ref('')
 const newScriptDescription = ref('')
+const newScriptUserName = ref('')
+const newScriptUserSubtitle = ref('')
 
 onMounted(() => {
   scriptStore.fetchScripts()
@@ -32,8 +34,13 @@ async function createNewScript() {
   }
   
   try {
-    // Send request to backend API
-    const response = await scriptStore.createScript(newScriptName.value.trim())
+    // Send request to backend API with all required parameters
+    const response = await scriptStore.createScript(
+      newScriptName.value.trim(),
+      newScriptDescription.value,
+      newScriptUserName.value,
+      newScriptUserSubtitle.value
+    )
 
     console.log("response:", response)
 
@@ -69,7 +76,7 @@ function cancelCreateScript() {
         Script Editor
       </h1>
       
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div 
           v-for="script in scriptStore.scripts" 
           :key="script.id"
@@ -109,6 +116,36 @@ function cancelCreateScript() {
                         v-model="newScriptName"
                         type="text"
                         placeholder="例如: 小灵的冒险故事"
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-purple-500"
+                        @keyup.enter="createNewScript"
+                    />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">故事描述</label>
+                    <input 
+                        v-model="newScriptDescription"
+                        type="text"
+                        placeholder="例如: 这是一个简简单单的小剧本"
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-purple-500"
+                        @keyup.enter="createNewScript"
+                    />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">用户名称</label>
+                    <input 
+                        v-model="newScriptUserName"
+                        type="text"
+                        placeholder="例如: 钦灵"
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-purple-500"
+                        @keyup.enter="createNewScript"
+                    />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">用户副标题</label>
+                    <input 
+                        v-model="newScriptUserSubtitle"
+                        type="text"
+                        placeholder="例如: LingChat Studio"
                         class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-purple-500"
                         @keyup.enter="createNewScript"
                     />

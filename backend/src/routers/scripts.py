@@ -5,8 +5,6 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException, Body
 from typing import List, Optional, Dict, Any
 from ..models import ScriptConfig, Chapter
-from pydantic import BaseModel
-
 router = APIRouter(
     prefix="/api/scripts",
     tags=["scripts"]
@@ -136,12 +134,14 @@ async def save_chapter(script_id: str, chapter_path: str, chapter: Chapter):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-class StoryUnit(BaseModel):
-    name: str
-
 @router.post("/create")
-async def create_script(unit: StoryUnit):
-    script_name = unit.name
+async def create_script(
+    name: str = Body(..., embed=True),
+    description: str = Body(..., embed=True),
+    user_name: str = Body(..., embed=True),
+    user_subtitle: str = Body(..., embed=True)
+):
+    script_name = name
     script_dir = BASE_DIR / script_name
     
     # Check if script already exists
@@ -157,24 +157,25 @@ async def create_script(unit: StoryUnit):
         (script_dir / "Characters").mkdir(exist_ok=True)
         (script_dir / "Charpters").mkdir(exist_ok=True)
         
-        # Create Charpter_1 and Intro subdirectories
-        (script_dir / "Charpters" / "Charpter_1").mkdir(exist_ok=True)
-        (script_dir / "Charpters" / "Intro").mkdir(exist_ok=True)
+        # # Create Charpter_1 and Intro subdirectories
+        # (script_dir / "Charpters" / "Charpter_1").mkdir(exist_ok=True)
+        # (script_dir / "Charpters" / "Intro").mkdir(exist_ok=True)
         
-        # Create empty story_config.yaml
+        # Create story_config.yaml with the specified format
         story_config_path = script_dir / "story_config.yaml"
-        # with open(story_config_path, "w", encoding="utf-8") as f:
-        #     f.write(f'script_name: {unit.name}\n')
+        story_config = {
+            "script_name": script_name,
+            "intro_charpter": "Intro/intro",
+            "description": description,
+            "script_settings": {
+                "user_name": user_name,
+                "user_subtitle": user_subtitle
+            }
+        }
         
-        # Create intro.yaml files in Charpter_1 and Intro directories
-        intro_files = [
-            script_dir / "Charpters" / "Charpter_1" / "intro.yaml",
-            script_dir / "Charpters" / "Intro" / "intro.yaml"
-        ]
-        
-        for intro_file in intro_files:
-            with open(intro_file, "w", encoding="utf-8") as f:
-                f.write("# Chapter introduction\n")
+        with open(story_config_path, "w", encoding="utf-8") as f:
+            yaml.dump(story_config, f, allow_unicode=True, sort_keys=False, default_flow_style=False)
+
         
         return {
             "status": "success",

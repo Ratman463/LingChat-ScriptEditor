@@ -84,9 +84,14 @@ export const useScriptStore = defineStore('script', () => {
       }
   }
 
-  async function createScript(name: string) {
+  async function createScript(name: string, description: string, user_name: string, user_subtitle: string) {
       try {
-          const response = await axios.post('/api/scripts/create', { name })
+          const response = await axios.post('/api/scripts/create', { 
+              name,
+              description,
+              user_name,
+              user_subtitle
+          })
           await fetchScripts()
           return response.data
       } catch (e) {
