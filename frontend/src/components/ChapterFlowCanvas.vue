@@ -21,6 +21,9 @@ const nodeDragOffset = { x: 0, y: 0 }
 const loadedChapters = ref<Record<string, any>>({})
 const chapterPositions = ref<Record<string, {x: number, y: number}>>({})
 
+// Expose loaded chapters for parent components to access
+const getLoadedChapters = () => loadedChapters.value
+
 // Helper to load all chapters
 async function loadAllChapters() {
     console.log("Loading chapters list:", scriptStore.chapters)
@@ -303,6 +306,11 @@ onUnmounted(() => {
      scriptStore.currentChapterPath = null
      scriptStore.currentChapterContent = null
      console.log("ChapterFlowCanvas unmounted, cleared script store data")
+})
+
+// Expose methods to parent component
+defineExpose({
+    getLoadedChapters
 })
 
 function handleWheel(e: WheelEvent) {
