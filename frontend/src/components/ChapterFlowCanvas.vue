@@ -296,6 +296,13 @@ onUnmounted(() => {
      window.removeEventListener('keydown', onKeyDown)
      window.removeEventListener('keyup', onKeyUp)
      window.removeEventListener('contextmenu', handleRightClick)
+     
+     // Clear all data in script store when component is unmounted
+     scriptStore.chapters = []
+     scriptStore.assets = {}
+     scriptStore.currentChapterPath = null
+     scriptStore.currentChapterContent = null
+     console.log("ChapterFlowCanvas unmounted, cleared script store data")
 })
 
 function handleWheel(e: WheelEvent) {
