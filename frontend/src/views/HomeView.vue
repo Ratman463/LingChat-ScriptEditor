@@ -26,7 +26,14 @@ const tutorialMessages = [
   "创建完成后，点击刚刚创建的剧本，将进入编辑器界面。",
   "在编辑器中，你可以添加各种事件来构建你的故事。",
   "每个事件都有不同的类型，比如对话、选择、结局等。",
-  "点击“添加事件”按钮来开始创建你的故事！"
+  "点击“Add Event”按钮，选择Narration来创建第一个事件。",
+  "创建好了以后再点击一下，就能编辑事件的内容了！",
+  "编辑完成后，记得点击“全部保存”按钮保存你的修改。",
+  "点击新增章节，就可以新建一个新的yaml文件。",
+  "章节两边有小白点，你可以在章节之间拖拽出一条跳转的线路",
+  "当然，你也可以增加End / Jump事件来跳转",
+  "好了，以上就是创建和编辑故事的基本流程了！", 
+  "小杂鱼学会了吗❤️"
 ]
 
 onMounted(() => {
@@ -143,7 +150,7 @@ function skipTutorial() {
     <div class="fixed bottom-8 right-8 z-50">
       <button 
         @click="startTutorial"
-        class="bg-gradient-to-r from-lime-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white p-4 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110"
+        class="bg-gradient-to-r from-black-100 to-blue-600 hover:from-black-100 hover:to-purple-700 text-white p-4 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110"
         title="教程"
       >
       📖
