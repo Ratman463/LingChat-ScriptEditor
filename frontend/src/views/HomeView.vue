@@ -14,6 +14,21 @@ const newScriptUserName = ref('')
 const newScriptUserSubtitle = ref('')
 const newScriptIntroChapter = ref('')
 
+// Tutorial state
+const showTutorial = ref(false)
+const tutorialStep = ref(0)
+const tutorialMessages = [
+  "哎呀，看来小杂鱼需要一点帮助呢😤",
+  "让我来教你创建第一个故事脚本吧❤️",
+  "首先，从点击“New Script”按钮开始。",
+  "输入你的故事名称、描述和用户信息。",
+  "特别注意“开场章节”字段，输入的路径将直接用于创建yaml文件。",
+  "创建完成后，点击刚刚创建的剧本，将进入编辑器界面。",
+  "在编辑器中，你可以添加各种事件来构建你的故事。",
+  "每个事件都有不同的类型，比如对话、选择、结局等。",
+  "点击“添加事件”按钮来开始创建你的故事！"
+]
+
 onMounted(() => {
   scriptStore.fetchScripts()
 })
@@ -69,6 +84,26 @@ function cancelCreateScript() {
   newScriptName.value = ''
   newScriptDescription.value = ''
 }
+
+function startTutorial() {
+  showTutorial.value = true
+  tutorialStep.value = 0
+}
+
+function nextTutorialStep() {
+  if (tutorialStep.value < tutorialMessages.length - 1) {
+    tutorialStep.value++
+  } else {
+    // Tutorial completed - close tutorial
+    showTutorial.value = false
+    tutorialStep.value = 0
+  }
+}
+
+function skipTutorial() {
+  showTutorial.value = false
+  tutorialStep.value = 0
+}
 </script>
 
 <template>
@@ -100,6 +135,93 @@ function cancelCreateScript() {
         >
           <span class="text-5xl mb-2 font-light group-hover:text-purple-400 transition-colors">+</span>
           <span class="font-medium group-hover:text-purple-300 transition-colors">New Script</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tutorial Button -->
+    <div class="fixed bottom-8 right-8 z-50">
+      <button 
+        @click="startTutorial"
+        class="bg-gradient-to-r from-lime-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white p-4 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110"
+        title="教程"
+      >
+      📖
+      </button>
+    </div>
+
+    <!-- Tutorial Dialog -->
+    <div v-if="showTutorial" class="fixed top-4 right-4 w-96 bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl z-50 transform transition-all duration-300" :class="showTutorial ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'">
+      <!-- Character Header -->
+      <div class="p-4 border-b border-gray-700 bg-gradient-to-r from-purple-900/50 to-pink-900/50">
+        <div class="flex items-center space-x-3">
+          <img 
+            src="/teacher.png" 
+            alt="风雪" 
+            class="w-24 h-24 rounded-full border-2 border-purple-400 shadow-lg object-contain"
+          />
+          <div>
+            <h3 class="text-lg font-bold text-white">风雪</h3>
+          </div>
+          <button 
+            @click="skipTutorial"
+            class="ml-auto text-gray-400 hover:text-gray-200 transition-colors"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tutorial Content -->
+      <div class="p-4">
+        <div class="mb-3">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs text-gray-400">步骤 {{ tutorialStep + 1 }}/{{ tutorialMessages.length }}</span>
+            <div class="flex space-x-1">
+              <div 
+                v-for="(_, index) in tutorialMessages" 
+                :key="index"
+                :class="[
+                  'w-2 h-2 rounded-full',
+                  index <= tutorialStep ? 'bg-purple-400' : 'bg-gray-600'
+                ]"
+              ></div>
+            </div>
+          </div>
+          <div class="w-full bg-gray-700 rounded-full h-1.5">
+            <div 
+              class="bg-gradient-to-r from-purple-500 to-pink-500 h-1.5 rounded-full transition-all duration-300"
+              :style="{ width: `${((tutorialStep + 1) / tutorialMessages.length) * 100}%` }"
+            ></div>
+          </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-lg p-3 border border-gray-600">
+          <p class="text-gray-200 text-sm leading-relaxed">
+            {{ tutorialMessages[tutorialStep] }}
+          </p>
+        </div>
+
+        <!-- Tutorial Actions -->
+        <div class="mt-4 flex justify-between items-center">
+          <div class="flex space-x-2">
+            <button 
+              v-if="tutorialStep > 0"
+              @click="tutorialStep--"
+              class="px-3 py-1 text-xs text-gray-400 hover:text-gray-200 transition-colors border border-gray-600 rounded"
+            >
+              上一步
+            </button>
+          </div>
+          
+          <button 
+            @click="nextTutorialStep"
+            class="px-4 py-1.5 text-xs bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg transition-colors"
+          >
+            {{ tutorialStep === tutorialMessages.length - 1 ? '完成' : '下一步' }}
+          </button>
         </div>
       </div>
     </div>
