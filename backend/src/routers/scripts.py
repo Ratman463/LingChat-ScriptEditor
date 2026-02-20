@@ -157,7 +157,7 @@ async def create_script(request: CreateScriptRequest):
         script_dir.mkdir(parents=True, exist_ok=True)
         
         # Create subdirectories
-        (script_dir / "Assests").mkdir(exist_ok=True)
+        (script_dir / "Assets").mkdir(exist_ok=True)
         (script_dir / "Characters").mkdir(exist_ok=True)
         (script_dir / "Chapters").mkdir(exist_ok=True)
         

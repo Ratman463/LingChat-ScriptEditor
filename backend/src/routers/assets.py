@@ -16,12 +16,7 @@ async def list_assets(script_id: str):
     if not script_dir.exists():
          raise HTTPException(status_code=404, detail="Script not found")
          
-    # Handle Assets vs Assests typo support
     assets_dir = script_dir / "Assets"
-    if not assets_dir.exists():
-        if (script_dir / "Assests").exists():
-            assets_dir = script_dir / "Assests"
-    
     assets = {
         "Backgrounds": [],
         "Musics": [],
