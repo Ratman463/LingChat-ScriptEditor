@@ -4,3 +4,4 @@ pydantic
 pyyaml
 toml
 python-multipart
+pyinstaller

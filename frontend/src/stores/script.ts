@@ -1,11 +1,17 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import axios from 'axios'
+import { apiBaseUrl } from '@/config/api'
+
+// Create axios instance with base URL for production
+const api = axios.create({
+  baseURL: apiBaseUrl
+})
 
 export interface ScriptConfig {
   id?: string
   script_name: string
-  intro_charpter: string
+  intro_chapter: string
   description?: string
   script_settings?: any
 }
@@ -22,7 +28,7 @@ export const useScriptStore = defineStore('script', () => {
 
   async function fetchScripts() {
     try {
-      const res = await axios.get('/api/scripts')
+      const res = await api.get('/api/scripts')
       scripts.value = res.data
     } catch (e) {
       console.error('Failed to fetch scripts', e)
@@ -35,7 +41,7 @@ export const useScriptStore = defineStore('script', () => {
           currentScript.value = existing
       }
       try {
-          const res = await axios.get(`/api/scripts/${id}`)
+          const res = await api.get(`/api/scripts/${id}`)
           currentScript.value = res.data
       } catch (e) {
           console.error(`Failed to load script ${id}`, e)
@@ -47,7 +53,7 @@ export const useScriptStore = defineStore('script', () => {
 
   async function fetchChapters(id: string) {
       try {
-          const res = await axios.get(`/api/scripts/${id}/chapters`)
+          const res = await api.get(`/api/scripts/${id}/chapters`)
           chapters.value = res.data
       } catch (e) {
           console.error("Failed to fetch chapters", e)
@@ -56,7 +62,7 @@ export const useScriptStore = defineStore('script', () => {
 
   async function fetchAssets(id: string) {
       try {
-          const res = await axios.get(`/api/scripts/${id}/assets`)
+          const res = await api.get(`/api/scripts/${id}/assets`)
           assets.value = res.data
       } catch (e) {
            console.error("Failed to fetch assets", e)
@@ -65,7 +71,7 @@ export const useScriptStore = defineStore('script', () => {
 
   async function loadChapter(scriptId: string, path: string) {
       try {
-          const res = await axios.get(`/api/scripts/${scriptId}/chapters/${path}`)
+          const res = await api.get(`/api/scripts/${scriptId}/chapters/${path}`)
           currentChapterContent.value = res.data
           currentChapterPath.value = path
       } catch (e) {
@@ -77,7 +83,7 @@ export const useScriptStore = defineStore('script', () => {
       if (!currentScript.value?.id || !currentChapterPath.value || !currentChapterContent.value) return;
       
       try {
-          await axios.post(`/api/scripts/${currentScript.value.id}/chapters/${currentChapterPath.value}`, currentChapterContent.value)
+          await api.post(`/api/scripts/${currentScript.value.id}/chapters/${currentChapterPath.value}`, currentChapterContent.value)
           alert("Saved successfully!")
       } catch (e) {
           alert("Failed to save: " + e)
@@ -86,7 +92,7 @@ export const useScriptStore = defineStore('script', () => {
 
   async function createScript(name: string, description: string, user_name: string, user_subtitle: string, intro_chapter: string) {
       try {
-          const response = await axios.post('/api/scripts/create', { 
+          const response = await api.post('/api/scripts/create', { 
               name,
               description,
               user_name,

@@ -7,10 +7,13 @@
 </script>
 
 <style scoped>
-@reference "tailwindcss";
-
 .grid-background {
-  @apply fixed inset-0 w-full h-full pointer-events-none z-0;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
   --grid-size: 50px;
   --grid-line-color: rgba(100, 180, 255, 0.15);
   --glow-color: rgba(0, 200, 255, 0.5);
@@ -46,7 +49,10 @@
 @media (prefers-reduced-motion: no-preference) {
   .grid-background::after {
     content: "";
-    @apply fixed inset-0 pointer-events-none z-[-1];
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
     background-image:
       radial-gradient(circle at 20% 30%, rgba(0, 200, 255, 0.04), transparent 25%),
       radial-gradient(circle at 80% 70%, rgba(120, 80, 255, 0.03), transparent 30%);

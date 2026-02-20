@@ -1,8 +1,16 @@
 <script setup lang="ts">
 import { useScriptStore } from '@/stores/script'
 import { onMounted, computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import ChapterFlowCanvas from '../components/ChapterFlowCanvas.vue'
+import { apiBaseUrl } from '@/config/api'
+
+const router = useRouter()
+
+// Helper function to get full API URL
+function getApiUrl(path: string): string {
+  return apiBaseUrl ? `${apiBaseUrl}${path}` : path
+}
 
 const route = useRoute()
 const scriptStore = useScriptStore()
@@ -43,7 +51,7 @@ async function save() {
         // Save each chapter
         for (const [chapterPath, chapterContent] of Object.entries(loadedChapters)) {
             try {
-                const response = await fetch(`/api/scripts/${scriptId}/chapters/${encodeURIComponent(chapterPath)}`, {
+                const response = await fetch(getApiUrl(`/api/scripts/${scriptId}/chapters/${encodeURIComponent(chapterPath)}`), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -104,7 +112,7 @@ async function createNewChapter() {
         }
         
         // Send request to backend API
-        const response = await fetch(`/api/scripts/${scriptId}/chapters/${encodeURIComponent(newChapterPath.value)}`, {
+        const response = await fetch(getApiUrl(`/api/scripts/${scriptId}/chapters/${encodeURIComponent(newChapterPath.value)}`), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -135,6 +143,10 @@ function cancelAddChapter() {
     newChapterPath.value = ''
 }
 
+function goBack() {
+    router.push('/')
+}
+
 </script>
 
 <template>
@@ -145,6 +157,13 @@ function cancelAddChapter() {
        <!-- Editor Header -->
        <header class="absolute top-0 left-0 right-0 h-16 pointer-events-none flex items-center px-6 justify-between z-50">
          <div class="bg-gray-900/90 backdrop-blur border border-gray-700 rounded-full px-6 py-2 pointer-events-auto shadow-2xl flex items-center space-x-4">
+               <button @click="goBack" class="text-sm font-medium text-gray-400 hover:text-white transition flex items-center space-x-1">
+                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                 </svg>
+                 <span>返回</span>
+               </button>
+               <span class="text-gray-600">|</span>
                <h1 class="font-bold text-lg text-purple-400">{{ scriptStore.currentScript?.script_name || 'Loading...' }}</h1>
                <span class="text-gray-600">|</span>
                <button @click="save" class="text-sm font-medium text-gray-300 hover:text-white transition">全部保存</button>
