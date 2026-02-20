@@ -2,6 +2,12 @@
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useScriptStore } from '@/stores/script'
 import ChapterNode from './ChapterNode.vue'
+import { apiBaseUrl } from '@/config/api'
+
+// Helper function to get full API URL
+function getApiUrl(path: string): string {
+  return apiBaseUrl ? `${apiBaseUrl}${path}` : path
+}
 
 const props = defineProps<{
     scriptId: string
@@ -40,7 +46,7 @@ async function loadAllChapters() {
              try {
                  // Note: encodeURIComponent handles special chars, but for :path param, 
                  // standard practice depends on server. We keep it as is.
-                 const res = await fetch(`/api/scripts/${props.scriptId}/chapters/${encodeURIComponent(chapterPath)}`)
+                 const res = await fetch(getApiUrl(`/api/scripts/${props.scriptId}/chapters/${encodeURIComponent(chapterPath)}`))
                  if (!res.ok) throw new Error(`Status ${res.status}`)
                  const data = await res.json()
                  console.log("Loaded chapter:", chapterPath, data)
@@ -229,7 +235,7 @@ function deleteEvent(chapterPath: string, eventIndex: number) {
 async function deleteChapter(chapterPath: string) {
     try {
         // Delete the chapter file via API
-        const res = await fetch(`/api/scripts/${props.scriptId}/chapters/${encodeURIComponent(chapterPath)}`, {
+        const res = await fetch(getApiUrl(`/api/scripts/${props.scriptId}/chapters/${encodeURIComponent(chapterPath)}`), {
             method: 'DELETE'
         })
         
@@ -275,7 +281,7 @@ async function createConnection(fromNode: string, fromSide: 'left' | 'right', to
         })
 
         // Save the updated chapter
-        await fetch(`/api/scripts/${props.scriptId}/chapters/${encodeURIComponent(fromNode)}`, {
+        await fetch(getApiUrl(`/api/scripts/${props.scriptId}/chapters/${encodeURIComponent(fromNode)}`), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

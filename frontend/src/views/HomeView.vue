@@ -130,7 +130,7 @@ function skipTutorial() {
           <h2 class="text-xl font-bold mb-2 group-hover:text-purple-300 transition-colors">{{ script.script_name }}</h2>
           <p class="text-gray-400 text-sm mb-4 line-clamp-2">{{ script.description }}</p>
           <div class="flex items-center justify-between text-xs text-gray-500 mt-auto">
-            <span class="bg-gray-900 px-2 py-1 rounded border border-gray-700">Start: {{ script.intro_charpter }}</span>
+            <span class="bg-gray-900 px-2 py-1 rounded border border-gray-700">Start: {{ script.intro_chapter }}</span>
             <span v-if="script.script_settings?.user_name">Pro: {{ script.script_settings.user_name }}</span>
           </div>
         </div>

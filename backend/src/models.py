@@ -9,7 +9,7 @@ class ScriptSettings(BaseModel):
 class ScriptConfig(BaseModel):
     id: Optional[str] = None
     script_name: str
-    intro_charpter: str
+    intro_chapter: str
     description: Optional[str] = None
     script_settings: Optional[ScriptSettings] = None
 

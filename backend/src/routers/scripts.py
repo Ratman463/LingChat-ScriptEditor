@@ -1,4 +1,5 @@
 import os
+import sys
 import yaml
 import json
 from pathlib import Path
@@ -10,7 +11,19 @@ router = APIRouter(
     tags=["scripts"]
 )
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent / "scripts"
+if getattr(sys, 'frozen', False):
+    # Running as compiled exe
+    # The exe is at resources/backend/ScriptEditorAPI.exe
+    # We need to find scripts at the main app level (same level as LingChat Script Editor.exe)
+    exe_dir = Path(sys.executable).parent
+    # Go up: backend -> resources -> win-unpacked (main app level)
+    main_app_dir = exe_dir.parent.parent
+    BASE_DIR = main_app_dir / "scripts"
+    print(f"Running as executable. Scripts directory: {BASE_DIR}")
+else:
+    # Running from source
+    BASE_DIR = Path(__file__).resolve().parent.parent.parent / "scripts"
+    print(f"Running from source. Scripts directory: {BASE_DIR}")
 
 def get_script_dir(script_id: str) -> Path:
     script_dir = BASE_DIR / script_id
@@ -58,12 +71,8 @@ async def get_script(script_id: str):
 @router.get("/{script_id}/chapters")
 async def list_chapters(script_id: str):
     script_dir = get_script_dir(script_id)
-    # Check for likely names, user has 'Charpters' on disk, but we should be robust
-    chapters_dir = script_dir / "Charpters"
-    if not chapters_dir.exists():
-        # Fallback check
-        if (script_dir / "Chapters").exists():
-            chapters_dir = script_dir / "Chapters"
+
+    chapters_dir = script_dir / "Chapters"
     
     if not chapters_dir.exists():
         return []
@@ -80,12 +89,7 @@ async def list_chapters(script_id: str):
 @router.get("/{script_id}/chapters/{chapter_path:path}")
 async def get_chapter(script_id: str, chapter_path: str):
     script_dir = get_script_dir(script_id)
-    
-    # Try Charpters/ first
-    chapters_dir = script_dir / "Charpters"
-    if not chapters_dir.exists():
-        chapters_dir = script_dir / "Chapters"
-    
+    chapters_dir = script_dir / "Chapters"
     chapter_file = chapters_dir / chapter_path
     
     if not chapter_file.name.lower().endswith(".yaml") and not chapter_file.name.lower().endswith(".yml"):
@@ -109,16 +113,7 @@ async def get_chapter(script_id: str, chapter_path: str):
 @router.post("/{script_id}/chapters/{chapter_path:path}")
 async def save_chapter(script_id: str, chapter_path: str, chapter: Chapter):
     script_dir = get_script_dir(script_id)
-    
-    chapters_dir = script_dir / "Charpters"
-    if not chapters_dir.exists():
-        if (script_dir / "Chapters").exists():
-            chapters_dir = script_dir / "Chapters"
-        else:
-            # Default to Charpters if creating new? Or stick to existing? 
-            # If neither exists, create Charpters as per user spec
-            chapters_dir = script_dir / "Charpters"
-    
+    chapters_dir = script_dir / "Chapters"
     chapter_file = chapters_dir / chapter_path
     
     if not chapter_file.name.lower().endswith(".yaml") and not chapter_file.name.lower().endswith(".yml"):
@@ -138,12 +133,9 @@ async def save_chapter(script_id: str, chapter_path: str, chapter: Chapter):
 async def delete_chapter(script_id: str, chapter_path: str):
     script_dir = get_script_dir(script_id)
     
-    chapters_dir = script_dir / "Charpters"
+    chapters_dir = script_dir / "Chapters"
     if not chapters_dir.exists():
-        if (script_dir / "Chapters").exists():
-            chapters_dir = script_dir / "Chapters"
-        else:
-            raise HTTPException(status_code=404, detail="Chapters directory not found")
+        raise HTTPException(status_code=404, detail="Chapters directory not found")
     
     chapter_file = chapters_dir / chapter_path
     
@@ -178,13 +170,13 @@ async def create_script(request: CreateScriptRequest):
         script_dir.mkdir(parents=True, exist_ok=True)
         
         # Create subdirectories
-        (script_dir / "Assests").mkdir(exist_ok=True)
+        (script_dir / "Assets").mkdir(exist_ok=True)
         (script_dir / "Characters").mkdir(exist_ok=True)
-        (script_dir / "Charpters").mkdir(exist_ok=True)
+        (script_dir / "Chapters").mkdir(exist_ok=True)
         
         # Create the intro chapter directory and file
         intro_chapter_path = Path(request.intro_chapter)
-        intro_chapter_dir = script_dir / "Charpters" / intro_chapter_path.parent
+        intro_chapter_dir = script_dir / "Chapters" / intro_chapter_path.parent
         intro_chapter_dir.mkdir(parents=True, exist_ok=True)
         
         # Create empty YAML file for the intro chapter
@@ -201,7 +193,7 @@ async def create_script(request: CreateScriptRequest):
         story_config_path = script_dir / "story_config.yaml"
         story_config = {
             "script_name": script_name,
-            "intro_charpter": request.intro_chapter,
+            "intro_chapter": request.intro_chapter,
             "description": request.description,
             "script_settings": {
                 "user_name": request.user_name,

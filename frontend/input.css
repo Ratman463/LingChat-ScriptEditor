@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+/* Configure Tailwind to scan Vue files for class names */
+@source "./src/**/*.vue";
+@source "./src/**/*.ts";
+@source "./src/**/*.js";
+@source "./index.html";
