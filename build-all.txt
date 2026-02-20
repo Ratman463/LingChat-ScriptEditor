@@ -1,0 +1,2 @@
+cd backend; Remove-Item -Recurse -Force dist, build -ErrorAction SilentlyContinue; pyinstaller --onefile --name "ScriptEditorAPI" run.py
+cd ../frontend; Remove-Item -Recurse -Force app-release -ErrorAction SilentlyContinue; pnpm electron:build

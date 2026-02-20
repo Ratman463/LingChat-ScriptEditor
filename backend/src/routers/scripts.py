@@ -1,4 +1,5 @@
 import os
+import sys
 import yaml
 import json
 from pathlib import Path
@@ -10,7 +11,19 @@ router = APIRouter(
     tags=["scripts"]
 )
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent / "scripts"
+if getattr(sys, 'frozen', False):
+    # Running as compiled exe
+    # The exe is at resources/backend/ScriptEditorAPI.exe
+    # We need to find scripts at the main app level (same level as LingChat Script Editor.exe)
+    exe_dir = Path(sys.executable).parent
+    # Go up: backend -> resources -> win-unpacked (main app level)
+    main_app_dir = exe_dir.parent.parent
+    BASE_DIR = main_app_dir / "scripts"
+    print(f"Running as executable. Scripts directory: {BASE_DIR}")
+else:
+    # Running from source
+    BASE_DIR = Path(__file__).resolve().parent.parent.parent / "scripts"
+    print(f"Running from source. Scripts directory: {BASE_DIR}")
 
 def get_script_dir(script_id: str) -> Path:
     script_dir = BASE_DIR / script_id

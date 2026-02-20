@@ -62,7 +62,9 @@
       {
         "from": "../backend/dist/ScriptEditorAPI.exe",
         "to": "backend/ScriptEditorAPI.exe"
-      },
+      }
+    ],
+    "extraFiles": [
       {
         "from": "../backend/scripts",
         "to": "scripts"
