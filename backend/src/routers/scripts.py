@@ -171,6 +171,12 @@ async def create_script(request: CreateScriptRequest):
         
         # Create subdirectories
         (script_dir / "Assets").mkdir(exist_ok=True)
+
+        # Create Assets subdirectories
+        (script_dir / "Assets" / "Backgrounds").mkdir(exist_ok=True)
+        (script_dir / "Assets" / "Musics").mkdir(exist_ok=True)
+        (script_dir / "Assets" / "Sounds").mkdir(exist_ok=True)
+
         (script_dir / "Characters").mkdir(exist_ok=True)
         (script_dir / "Chapters").mkdir(exist_ok=True)
         

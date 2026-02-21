@@ -26,6 +26,9 @@ const currentCharacters = ref<Record<string, boolean>>({})
 const autoMode = ref(false)
 const autoInterval = ref<number | null>(null)
 
+const audioContext = ref<AudioContext | null>(null)
+const currentAudioSource = ref<AudioBufferSourceNode | null>(null)
+
 // Computed
 const currentChapterData = computed(() => {
     if (!currentChapter.value) return null
@@ -147,6 +150,7 @@ function processEvent() {
             break
         case 'music':
             console.log('Playing music:', event.musicPath)
+            playGameAudio(event.musicPath, event.duration)
             advanceEvent()
             break
         case 'modify_character':
@@ -171,26 +175,97 @@ const defaultPathPrefixes: Record<string, string> = {
     sound: 'Sounds/'
 }
 
+async function playGameAudio(musicPath: string, duration: number) {
+    try {
+        // Stop any currently playing audio
+        if (currentAudioSource.value) {
+            try {
+                currentAudioSource.value.stop()
+            } catch (e) {
+                // Ignore errors from already stopped source
+            }
+            currentAudioSource.value = null
+        }
+        
+        // Get or create AudioContext
+        if (!audioContext.value) {
+            audioContext.value = new (window.AudioContext || (window as any).webkitAudioContext)()
+        }
+        
+        // Resume AudioContext if it's suspended (browser autoplay policy)
+        if (audioContext.value.state === 'suspended') {
+            await audioContext.value.resume()
+        }
+        
+        // Build the music URL
+        const prefixedPath = defaultPathPrefixes.music + musicPath
+        let musicUrl = assets.value[prefixedPath]
+        
+        // Fallback to API endpoint if not in assets map
+        if (!musicUrl) {
+            const scriptId = scriptStore.currentScript?.id
+            musicUrl = getApiUrl(`/api/preview/${scriptId}/assets/${prefixedPath}`)
+        }
+        
+        console.log('Loading music from:', musicUrl)
+        
+        // Fetch and decode audio
+        const response = await fetch(musicUrl)
+        if (!response.ok) {
+            throw new Error(`Failed to load music: ${response.status}`)
+        }
+        
+        const arrayBuffer = await response.arrayBuffer()
+        const audioBuffer = await audioContext.value.decodeAudioData(arrayBuffer)
+        
+        // Create and configure source
+        const source = audioContext.value.createBufferSource()
+        source.buffer = audioBuffer
+        source.connect(audioContext.value.destination)
+        
+        // Store reference to stop later
+        currentAudioSource.value = source
+        
+        const startTime = audioContext.value.currentTime
+        
+        // Handle duration: duration is in seconds, no conversion needed
+        // AudioContext uses seconds, not milliseconds
+        if (duration > 0) {
+            source.start(startTime)
+            source.stop(startTime + duration) // duration is already in seconds
+        } else {
+            // duration is 0 means play until next music event or end
+            // Set loop to true for infinite playback
+            source.loop = true
+            source.start(startTime)
+        }
+        
+        // Clean up reference when audio ends
+        source.onended = () => {
+            if (currentAudioSource.value === source) {
+                currentAudioSource.value = null
+            }
+        }
+        
+    } catch (error) {
+        console.error('Failed to play audio:', error)
+        // Don't throw - just log the error and continue
+    }
+}
+
+
 function setBackground(imagePath: string) {
     if (!imagePath) return
-    
-    // Try with the path as-is first
-    let assetUrl = assets.value[imagePath]
-    
-    // If not found, try adding default prefix for backgrounds
-    if (!assetUrl) {
-        const prefixedPath = defaultPathPrefixes.background + imagePath
-        assetUrl = assets.value[prefixedPath]
-    }
-    
+
+    const prefixedPath = defaultPathPrefixes.background + imagePath
+    let assetUrl = assets.value[prefixedPath]
+
     if (assetUrl) {
         currentBackground.value = assetUrl
     } else {
         // Try direct API path with default prefix
         const scriptId = scriptStore.currentScript?.id
-        const apiPath = imagePath.includes('/') 
-            ? imagePath 
-            : `Backgrounds/${imagePath}`
+        const apiPath = `Backgrounds/${imagePath}`
         currentBackground.value = getApiUrl(`/api/preview/${scriptId}/assets/${apiPath}`)
     }
 }
@@ -286,6 +361,13 @@ watch(() => props.isOpen, (isOpen) => {
             clearInterval(autoInterval.value)
             autoInterval.value = null
             autoMode.value = false
+        }
+        // Stop any playing audio
+        if (currentAudioSource.value) {
+            try {
+                currentAudioSource.value.stop()
+            } catch (e) {}
+            currentAudioSource.value = null
         }
     }
 })
