@@ -201,8 +201,11 @@ async function playGameAudio(musicPath: string, duration: number) {
         const prefixedPath = defaultPathPrefixes.music + musicPath
         let musicUrl = assets.value[prefixedPath]
         
-        // Fallback to API endpoint if not in assets map
-        if (!musicUrl) {
+        // If URL exists in assets map, prefix with apiBaseUrl
+        if (musicUrl) {
+            musicUrl = getApiUrl(musicUrl)
+        } else {
+            // Fallback to API endpoint if not in assets map
             const scriptId = scriptStore.currentScript?.id
             musicUrl = getApiUrl(`/api/preview/${scriptId}/assets/${prefixedPath}`)
         }
@@ -261,7 +264,8 @@ function setBackground(imagePath: string) {
     let assetUrl = assets.value[prefixedPath]
 
     if (assetUrl) {
-        currentBackground.value = assetUrl
+        // Prefix with apiBaseUrl
+        currentBackground.value = getApiUrl(assetUrl)
     } else {
         // Try direct API path with default prefix
         const scriptId = scriptStore.currentScript?.id
@@ -293,7 +297,8 @@ function getCharacterImageUrl(charId: string, emotion: string): string {
     const key = `Characters/${charId}/avatar/${emotion}`;
     
     if (assets.value[key]) {
-        return assets.value[key]
+        // Prefix with apiBaseUrl
+        return getApiUrl(assets.value[key])
     }
     
     // Fallback to API endpoint
@@ -501,24 +506,24 @@ onUnmounted(() => {
                     ></div>
 
                     <!-- Character Layer -->
-                    <div class="absolute inset-0 top-0 h-[70%] flex justify-center items-end z-[2]">
+                    <div class="absolute inset-0 top-0 h-full flex justify-center items-end z-[2]">
                         <div 
                             v-for="(emotion, charId) in currentCharacters" 
                             :key="charId"
-                            class="character-container"
+                            class="character-container h-full"
                         >
                             <img 
                                 v-if="emotion"
                                 :src="getCharacterImageUrl(charId, emotion)"
                                 :alt="findCharacterName(charId)"
-                                class="max-h-[80%] max-w-[30%] object-contain mx-[2%]"
+                                class="object-contain mx-[2%]"
                                 @error="($event.target as HTMLImageElement).style.display = 'none'"
                             />
                         </div>
                     </div>
 
                     <!-- Dialogue Box -->
-                    <div class="absolute bottom-0 left-0 right-0 z-[10] min-h-[200px]" style="background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 80%, transparent 100%); padding: 20px 40px 30px;">
+                    <div class="absolute bottom-0 left-0 right-0 z-[10]" style="background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 80%, transparent 100%); padding: 20px 40px 30px;">
                         <div 
                             v-if="speakerName"
                             class="text-lg font-bold text-purple-400 mb-2.5 px-4 py-1.5 bg-purple-500/20 rounded inline-block"
