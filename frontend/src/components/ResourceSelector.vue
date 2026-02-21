@@ -24,6 +24,14 @@ const categoryMap: Record<string, string[]> = {
     sound: ['Sounds', 'sound', 'effects']
 }
 
+// Default path prefix to strip for each resource type
+const defaultPathPrefix: Record<string, string> = {
+    background: 'Backgrounds/',
+    music: 'Musics/',
+    character: '',
+    sound: 'Sounds/'
+}
+
 // Fetch resources from backend
 async function fetchResources() {
     const scriptId = scriptStore.currentScript?.id
@@ -71,7 +79,15 @@ function getDisplayName(path: string): string {
 }
 
 function selectResource(resource: string) {
-    emit('update:modelValue', resource)
+    // Strip the default path prefix when saving
+    const prefix = defaultPathPrefix[props.resourceType] || ''
+    let valueToSave = resource
+    
+    if (prefix && resource.startsWith(prefix)) {
+        valueToSave = resource.slice(prefix.length)
+    }
+    
+    emit('update:modelValue', valueToSave)
     showDropdown.value = false
     searchText.value = ''
 }

@@ -160,15 +160,34 @@ function processEvent() {
     }
 }
 
+// Default path prefixes for different asset types
+const defaultPathPrefixes: Record<string, string> = {
+    background: 'Backgrounds/',
+    music: 'Musics/',
+    sound: 'Sounds/'
+}
+
 function setBackground(imagePath: string) {
     if (!imagePath) return
     
-    const assetUrl = assets.value[imagePath]
+    // Try with the path as-is first
+    let assetUrl = assets.value[imagePath]
+    
+    // If not found, try adding default prefix for backgrounds
+    if (!assetUrl) {
+        const prefixedPath = defaultPathPrefixes.background + imagePath
+        assetUrl = assets.value[prefixedPath]
+    }
+    
     if (assetUrl) {
         currentBackground.value = assetUrl
     } else {
+        // Try direct API path with default prefix
         const scriptId = scriptStore.currentScript?.id
-        currentBackground.value = getApiUrl(`/api/preview/${scriptId}/assets/${imagePath}`)
+        const apiPath = imagePath.includes('/') 
+            ? imagePath 
+            : `Backgrounds/${imagePath}`
+        currentBackground.value = getApiUrl(`/api/preview/${scriptId}/assets/${apiPath}`)
     }
 }
 
