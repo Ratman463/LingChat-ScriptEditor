@@ -119,6 +119,9 @@ async function loadGameData() {
         currentCharacters.value = {}
         currentBackground.value = ''
         
+        // Process the first event
+        processEvent()
+        
     } catch (e) {
         error.value = '加载游戏数据失败: ' + (e instanceof Error ? e.message : String(e))
     } finally {
@@ -134,6 +137,7 @@ function findCharacterName(charId: string): string {
 
 function processEvent() {
     const event = currentEvent.value
+    console.log("currentEvent.value:", currentEvent.value);
     if (!event) return
     
     switch (event.type) {
