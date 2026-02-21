@@ -165,7 +165,7 @@ async def get_character_image(script_id: str, character_id: str):
     
     if avatar_dir.exists():
         # Try common default emotions
-        for default_name in ["正常", "默认", "default", "Default", "normal", "Normal"]:
+        for default_name in ["正常"]:
             for ext in [".png", ".jpg", ".jpeg"]:
                 default_path = avatar_dir / f"{default_name}{ext}"
                 if default_path.exists():
@@ -176,16 +176,17 @@ async def get_character_image(script_id: str, character_id: str):
             if file.suffix.lower() in ['.png', '.jpg', '.jpeg', '.gif', '.webp']:
                 return FileResponse(file)
     
-    # Try other locations
-    possible_paths = [
-        script_dir / "Assets" / "Characters" / character_id,
-        script_dir / "Assets" / "Characters" / f"{character_id}.png",
-        script_dir / "Characters" / character_id / f"{character_id}.png",
-    ]
-    
-    for path in possible_paths:
-        if path.exists():
-            return FileResponse(path)
-    
     raise HTTPException(status_code=404, detail=f"Character image not found: {character_id}")
 
+@router.get("/{script_id}/character/{character_id}/{emotion}")
+async def get_character_image(script_id: str, character_id: str, emotion: str):
+    script_dir = get_script_dir(script_id)
+    avatar_dir = script_dir / "Characters" / character_id / "avatar"
+    
+    if avatar_dir.exists():
+        for ext in [".png", ".jpg", ".jpeg"]:
+            default_path = avatar_dir / f"{emotion}{ext}"
+            if default_path.exists():
+                return FileResponse(default_path)
+
+    raise HTTPException(status_code=404, detail=f"Character image not found: {character_id}")

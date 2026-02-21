@@ -22,7 +22,7 @@ const characters = ref<any[]>([])
 const currentChapter = ref<string | null>(null)
 const currentEventIndex = ref(0)
 const currentBackground = ref('')
-const currentCharacters = ref<Record<string, boolean>>({})
+const currentCharacters = ref<Record<string, string>>({})
 const autoMode = ref(false)
 const autoInterval = ref<number | null>(null)
 
@@ -270,13 +270,17 @@ function setBackground(imagePath: string) {
     }
 }
 
+
+
 function modifyCharacter(event: any) {
     const action = event.action
     const character = event.character
+    const emotion = event.emotion
     
     switch (action) {
         case 'show_character':
-            currentCharacters.value[character] = true
+            currentCharacters.value[character] = emotion
+            console.log("currentCharacters:", currentCharacters.value)
             break
         case 'hide_character':
             delete currentCharacters.value[character]
@@ -284,19 +288,12 @@ function modifyCharacter(event: any) {
     }
 }
 
-function getCharacterImageUrl(charId: string): string {
+function getCharacterImageUrl(charId: string, emotion: string): string {
     const scriptId = scriptStore.currentScript?.id
+    const key = `Characters/${charId}/avatar/${emotion}`;
     
-    // Check assets map first
-    const possibleKeys = [
-        `Characters/${charId}`,
-        `${charId}`,
-    ]
-    
-    for (const key of possibleKeys) {
-        if (assets.value[key]) {
-            return assets.value[key]
-        }
+    if (assets.value[key]) {
+        return assets.value[key]
     }
     
     // Fallback to API endpoint
@@ -506,13 +503,13 @@ onUnmounted(() => {
                     <!-- Character Layer -->
                     <div class="absolute inset-0 top-0 h-[70%] flex justify-center items-end z-[2]">
                         <div 
-                            v-for="(shown, charId) in currentCharacters" 
+                            v-for="(emotion, charId) in currentCharacters" 
                             :key="charId"
                             class="character-container"
                         >
                             <img 
-                                v-if="shown"
-                                :src="getCharacterImageUrl(charId)"
+                                v-if="emotion"
+                                :src="getCharacterImageUrl(charId, emotion)"
                                 :alt="findCharacterName(charId)"
                                 class="max-h-[80%] max-w-[30%] object-contain mx-[2%]"
                                 @error="($event.target as HTMLImageElement).style.display = 'none'"
