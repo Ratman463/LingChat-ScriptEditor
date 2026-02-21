@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { useScriptStore } from '@/stores/script'
-import { onMounted, computed, ref } from 'vue'
+import { onMounted, onUnmounted, computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ChapterFlowCanvas from '../components/ChapterFlowCanvas.vue'
+import PreviewPanel from '../components/PreviewPanel.vue'
 import { apiBaseUrl } from '@/config/api'
 
 const router = useRouter()
@@ -22,11 +23,19 @@ const chapterFlowCanvasRef = ref()
 const showAddChapterDialog = ref(false)
 const newChapterPath = ref('')
 
+// State for preview panel
+const showPreview = ref(false)
+
+function togglePreview() {
+    showPreview.value = !showPreview.value
+}
+
 onMounted(() => {
   const id = route.params.scriptId as string
   if (id) {
     scriptStore.loadScript(id)
   }
+  window.addEventListener('keydown', handleKeydown)
 })
 
 async function save() {
@@ -144,8 +153,19 @@ function cancelAddChapter() {
 }
 
 function goBack() {
-    router.push('/')
+  router.push('/')
 }
+
+// Handle ESC key to close preview
+function handleKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape' && showPreview.value) {
+        showPreview.value = false
+    }
+}
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
+})
 
 </script>
 
@@ -168,6 +188,14 @@ function goBack() {
                <span class="text-gray-600">|</span>
                <button @click="save" class="text-sm font-medium text-gray-300 hover:text-white transition">全部保存</button>
                <button @click="showAddChapter" class="text-sm font-medium text-purple-300 hover:text-purple-100 transition">+ 新增章节</button>
+               <span class="text-gray-600">|</span>
+               <button @click="togglePreview" class="text-sm font-medium flex items-center space-x-1 transition" :class="showPreview ? 'text-purple-400' : 'text-gray-300 hover:text-white'">
+                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                 </svg>
+                 <span>预览</span>
+               </button>
          </div>
        </header>
        
@@ -219,5 +247,11 @@ function goBack() {
            </div>
        </div>
     </main>
+
+    <!-- Preview Panel -->
+    <PreviewPanel 
+        :isOpen="showPreview"
+        @close="showPreview = false"
+    />
   </div>
 </template>

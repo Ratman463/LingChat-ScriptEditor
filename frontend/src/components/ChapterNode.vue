@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import draggable from 'vuedraggable'
 import { EVENT_SCHEMAS } from '../config/events'
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
+import ResourceSelector from './ResourceSelector.vue'
 
 const props = defineProps<{
     chapterPath: string
@@ -165,6 +166,12 @@ function cancelDelete() {
                          >
                             <option v-for="opt in field.options" :key="opt" :value="opt">{{ opt }}</option>
                          </select>
+                         <ResourceSelector 
+                            v-else-if="field.type === 'file' && field.resourceType"
+                            v-model="element[field.key]"
+                            :resourceType="field.resourceType"
+                            :placeholder="'选择' + field.label"
+                         />
                          <input 
                             v-else
                             v-model="element[field.key]"

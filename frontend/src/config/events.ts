@@ -5,6 +5,7 @@ export interface EventField {
     options?: string[] // For select
     default?: any
     hint?: string
+    resourceType?: 'background' | 'music' | 'character' | 'sound' // For file type - which resource category to use
 }
 
 export interface EventSchema {
@@ -47,7 +48,7 @@ export const EVENT_SCHEMAS: Record<string, EventSchema> = {
         label: 'Character Dialogue',
         color: 'border-blue-500/50 bg-blue-900/20',
         mandatory: [
-            { key: 'character', label: 'Character', type: 'text' },
+            { key: 'character', label: 'Character', type: 'file', resourceType: 'character' },
             { key: 'text', label: 'Content', type: 'textarea' }
         ],
         optional: [...COMMON_OPTIONAL]
@@ -57,7 +58,7 @@ export const EVENT_SCHEMAS: Record<string, EventSchema> = {
         label: 'AI Dialogue',
         color: 'border-cyan-500/50 bg-cyan-900/20',
         mandatory: [
-             { key: 'character', label: 'Character', type: 'text' },
+             { key: 'character', label: 'Character', type: 'file', resourceType: 'character' },
              { key: 'prompt', label: 'AI Prompt', type: 'textarea' }
         ],
         optional: [...COMMON_OPTIONAL]
@@ -68,7 +69,7 @@ export const EVENT_SCHEMAS: Record<string, EventSchema> = {
         color: 'border-pink-500/50 bg-pink-900/20',
         mandatory: [
             { key: 'action', label: 'Action', type: 'select', options: ['show_character', 'hide_character', 'move_character', 'shake_character'] },
-            { key: 'character', label: 'Character', type: 'text' }
+            { key: 'character', label: 'Character', type: 'file', resourceType: 'character' }
         ],
         optional: [
             { key: 'emotion', label: 'Emotion', type: 'text' },
@@ -82,7 +83,7 @@ export const EVENT_SCHEMAS: Record<string, EventSchema> = {
         label: 'Background',
         color: 'border-green-500/50 bg-green-900/20',
         mandatory: [
-            { key: 'imagePath', label: 'Image Path', type: 'file' }
+            { key: 'imagePath', label: 'Image Path', type: 'file', resourceType: 'background' }
         ],
         optional: [...COMMON_OPTIONAL]
     },
@@ -91,7 +92,7 @@ export const EVENT_SCHEMAS: Record<string, EventSchema> = {
         label: 'Music',
         color: 'border-yellow-500/50 bg-yellow-900/20',
         mandatory: [
-            { key: 'musicPath', label: 'Music Path', type: 'file' }
+            { key: 'musicPath', label: 'Music Path', type: 'file', resourceType: 'music' }
         ],
         optional: [...COMMON_OPTIONAL]
     },
