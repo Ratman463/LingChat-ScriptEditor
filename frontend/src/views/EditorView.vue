@@ -3,7 +3,7 @@ import { useScriptStore } from '@/stores/script'
 import { onMounted, onUnmounted, computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ChapterFlowCanvas from '../components/ChapterFlowCanvas.vue'
-import PreviewPanel from '../components/PreviewPanel.vue'
+import GamePreview from '../components/GamePreview.vue'
 import { apiBaseUrl } from '@/config/api'
 
 const router = useRouter()
@@ -248,8 +248,8 @@ onUnmounted(() => {
        </div>
     </main>
 
-    <!-- Preview Panel -->
-    <PreviewPanel 
+    <!-- Game Preview -->
+    <GamePreview 
         :isOpen="showPreview"
         @close="showPreview = false"
     />

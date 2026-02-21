@@ -1,0 +1,479 @@
+<script setup lang="ts">
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useScriptStore } from '@/stores/script'
+import { apiBaseUrl } from '@/config/api'
+
+const props = defineProps<{
+    isOpen: boolean
+}>()
+
+const emit = defineEmits(['close'])
+
+const scriptStore = useScriptStore()
+
+// Game State
+const isLoading = ref(true)
+const error = ref('')
+const config = ref<Record<string, any>>({})
+const chapters = ref<Record<string, any>>({})
+const assets = ref<Record<string, string>>({})
+const characters = ref<any[]>([])
+
+const currentChapter = ref<string | null>(null)
+const currentEventIndex = ref(0)
+const currentBackground = ref('')
+const currentCharacters = ref<Record<string, boolean>>({})
+const autoMode = ref(false)
+const autoInterval = ref<number | null>(null)
+
+// Computed
+const currentChapterData = computed(() => {
+    if (!currentChapter.value) return null
+    return chapters.value[currentChapter.value]
+})
+
+const currentEvent = computed(() => {
+    if (!currentChapterData.value?.events) return null
+    return currentChapterData.value.events[currentEventIndex.value]
+})
+
+const speakerName = computed(() => {
+    if (!currentEvent.value) return ''
+    const event = currentEvent.value
+    
+    switch (event.type) {
+        case 'narration':
+            return ''
+        case 'player':
+            return '玩家'
+        case 'dialogue':
+        case 'ai_dialogue':
+            return findCharacterName(event.character)
+        default:
+            return ''
+    }
+})
+
+const dialogueText = computed(() => {
+    if (!currentEvent.value) return ''
+    const event = currentEvent.value
+    
+    switch (event.type) {
+        case 'narration':
+            return event.text || ''
+        case 'player':
+            return event.text || ''
+        case 'dialogue':
+            return event.text || ''
+        case 'ai_dialogue':
+            return '[AI] ' + (event.text || '等待AI生成...')
+        default:
+            return ''
+    }
+})
+
+const isEndOfChapter = computed(() => {
+    return !currentEvent.value && currentChapterData.value
+})
+
+const showClickIndicator = computed(() => {
+    const event = currentEvent.value
+    if (!event) return false
+    return ['narration', 'player', 'dialogue', 'ai_dialogue'].includes(event.type)
+})
+
+// Methods
+function getApiUrl(path: string): string {
+    return apiBaseUrl ? `${apiBaseUrl}${path}` : path
+}
+
+async function loadGameData() {
+    const scriptId = scriptStore.currentScript?.id
+    if (!scriptId) return
+    
+    isLoading.value = true
+    error.value = ''
+    
+    try {
+        const response = await fetch(getApiUrl(`/api/preview/${scriptId}/data`))
+        if (!response.ok) throw new Error('Failed to load game data')
+        
+        const data = await response.json()
+        config.value = data.config || {}
+        chapters.value = data.chapters || {}
+        assets.value = data.assets || {}
+        characters.value = data.characters || []
+        
+        // Start with intro chapter
+        const introChapter = config.value.intro_chapter
+        if (introChapter && chapters.value[introChapter]) {
+            currentChapter.value = introChapter || null
+        } else {
+            const chapterKeys = Object.keys(chapters.value)
+            if (chapterKeys.length > 0) {
+                currentChapter.value = chapterKeys[0] || null
+            }
+        }
+        
+        currentEventIndex.value = 0
+        currentCharacters.value = {}
+        currentBackground.value = ''
+        
+    } catch (e) {
+        error.value = '加载游戏数据失败: ' + (e instanceof Error ? e.message : String(e))
+    } finally {
+        isLoading.value = false
+    }
+}
+
+function findCharacterName(charId: string): string {
+    if (!charId) return '未知角色'
+    const char = characters.value.find((c: any) => c.id === charId || c.name === charId)
+    return char ? (char.name || char.id) : charId
+}
+
+function processEvent() {
+    const event = currentEvent.value
+    if (!event) return
+    
+    switch (event.type) {
+        case 'background':
+            setBackground(event.imagePath)
+            advanceEvent()
+            break
+        case 'music':
+            console.log('Playing music:', event.musicPath)
+            advanceEvent()
+            break
+        case 'modify_character':
+            modifyCharacter(event)
+            advanceEvent()
+            break
+        case 'set_variable':
+            advanceEvent()
+            break
+        case 'end':
+            if (event.next && event.next !== 'end') {
+                jumpToChapter(event.next)
+            }
+            break
+    }
+}
+
+function setBackground(imagePath: string) {
+    if (!imagePath) return
+    
+    const assetUrl = assets.value[imagePath]
+    if (assetUrl) {
+        currentBackground.value = assetUrl
+    } else {
+        const scriptId = scriptStore.currentScript?.id
+        currentBackground.value = getApiUrl(`/api/preview/${scriptId}/assets/${imagePath}`)
+    }
+}
+
+function modifyCharacter(event: any) {
+    const action = event.action
+    const character = event.character
+    
+    switch (action) {
+        case 'show_character':
+            currentCharacters.value[character] = true
+            break
+        case 'hide_character':
+            delete currentCharacters.value[character]
+            break
+    }
+}
+
+function getCharacterImageUrl(charId: string): string {
+    const scriptId = scriptStore.currentScript?.id
+    
+    // Check assets map first
+    const possibleKeys = [
+        `Characters/${charId}`,
+        `${charId}`,
+    ]
+    
+    for (const key of possibleKeys) {
+        if (assets.value[key]) {
+            return assets.value[key]
+        }
+    }
+    
+    // Fallback to API endpoint
+    return getApiUrl(`/api/preview/${scriptId}/character/${encodeURIComponent(charId)}`)
+}
+
+function advanceEvent() {
+    currentEventIndex.value++
+    processEvent()
+}
+
+function jumpToChapter(chapterPath: string) {
+    if (chapters.value[chapterPath]) {
+        currentChapter.value = chapterPath
+        currentEventIndex.value = 0
+        processEvent()
+    }
+}
+
+function restartGame() {
+    currentEventIndex.value = 0
+    currentCharacters.value = {}
+    currentBackground.value = ''
+    processEvent()
+}
+
+function toggleAuto() {
+    autoMode.value = !autoMode.value
+    if (autoMode.value) {
+        autoInterval.value = window.setInterval(() => {
+            advanceEvent()
+        }, 3000)
+    } else {
+        if (autoInterval.value) {
+            clearInterval(autoInterval.value)
+            autoInterval.value = null
+        }
+    }
+}
+
+function handleClick() {
+    if (!autoMode.value) {
+        advanceEvent()
+    }
+}
+
+function handleKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape' && props.isOpen) {
+        emit('close')
+    } else if ((e.key === 'Space' || e.key === 'Enter') && props.isOpen) {
+        advanceEvent()
+    }
+}
+
+// Watch for panel open
+watch(() => props.isOpen, (isOpen) => {
+    if (isOpen) {
+        loadGameData()
+    } else {
+        // Stop auto mode when closing
+        if (autoInterval.value) {
+            clearInterval(autoInterval.value)
+            autoInterval.value = null
+            autoMode.value = false
+        }
+    }
+})
+
+onMounted(() => {
+    window.addEventListener('keydown', handleKeydown)
+    if (props.isOpen) {
+        loadGameData()
+    }
+})
+
+onUnmounted(() => {
+    window.removeEventListener('keydown', handleKeydown)
+    if (autoInterval.value) {
+        clearInterval(autoInterval.value)
+    }
+})
+</script>
+
+<template>
+    <!-- Backdrop -->
+    <div 
+        v-if="isOpen"
+        class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40"
+        @click="$emit('close')"
+    ></div>
+
+    <!-- Popup Container -->
+    <div 
+        v-if="isOpen"
+        class="fixed inset-0 z-50 flex items-center justify-center p-8 pointer-events-none"
+    >
+        <div 
+            class="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl flex flex-col pointer-events-auto overflow-hidden"
+            style="width: 960px; max-width: 90vw; height: 600px; max-height: 85vh;"
+            @click.stop
+        >
+            <!-- Header -->
+            <div class="flex items-center justify-between px-4 py-3 bg-gray-800 border-b border-gray-700">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="font-bold text-gray-200">游戏预览</span>
+                    <span class="text-xs text-gray-500 ml-2">{{ scriptStore.currentScript?.script_name || '' }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button 
+                        @click="loadGameData"
+                        class="flex items-center gap-1 px-3 py-1.5 text-xs text-gray-300 hover:text-white hover:bg-gray-700 rounded transition"
+                        title="刷新预览"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        <span>刷新</span>
+                    </button>
+                    <button 
+                        @click="restartGame"
+                        class="flex items-center gap-1 px-3 py-1.5 text-xs text-gray-300 hover:text-white hover:bg-gray-700 rounded transition"
+                        title="重新开始"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        <span>重玩</span>
+                    </button>
+                    <button 
+                        @click="toggleAuto"
+                        class="flex items-center gap-1 px-3 py-1.5 text-xs rounded transition"
+                        :class="autoMode ? 'text-purple-400 bg-purple-900/30' : 'text-gray-300 hover:text-white hover:bg-gray-700'"
+                        title="自动播放"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                        </svg>
+                        <span>自动</span>
+                    </button>
+                    <button 
+                        @click="$emit('close')"
+                        class="p-1.5 text-gray-400 hover:text-white hover:bg-red-600 rounded transition"
+                        title="关闭预览"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Game Preview Container -->
+            <div 
+                class="flex-1 relative overflow-hidden"
+                @click="handleClick"
+            >
+                <!-- Loading -->
+                <div v-if="isLoading" class="absolute inset-0 flex items-center justify-center bg-gray-950 z-10">
+                    <div class="flex flex-col items-center gap-3">
+                        <div class="w-10 h-10 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span class="text-sm text-gray-400">加载游戏数据...</span>
+                    </div>
+                </div>
+
+                <!-- Error -->
+                <div v-else-if="error" class="absolute inset-0 flex items-center justify-center bg-gray-950 z-10 p-8">
+                    <div class="bg-red-900/50 border border-red-700 rounded-lg p-4 max-w-md text-center">
+                        <svg class="w-12 h-12 text-red-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        <p class="text-red-300">{{ error }}</p>
+                    </div>
+                </div>
+
+                <!-- No Script -->
+                <div v-else-if="!scriptStore.currentScript?.id" class="absolute inset-0 flex items-center justify-center bg-gray-950 z-10">
+                    <div class="flex flex-col items-center gap-3 text-center p-4">
+                        <svg class="w-16 h-16 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <span class="text-gray-500">请先选择一个脚本</span>
+                    </div>
+                </div>
+
+                <!-- Game Content -->
+                <template v-else>
+                    <!-- Background Layer -->
+                    <div 
+                        class="absolute inset-0 bg-cover bg-center transition-all duration-500"
+                        :style="{ 
+                            backgroundColor: '#16213e',
+                            backgroundImage: currentBackground ? `url(${currentBackground})` : 'none'
+                        }"
+                    ></div>
+
+                    <!-- Character Layer -->
+                    <div class="absolute inset-0 top-0 h-[70%] flex justify-center items-end z-[2]">
+                        <div 
+                            v-for="(shown, charId) in currentCharacters" 
+                            :key="charId"
+                            class="character-container"
+                        >
+                            <img 
+                                v-if="shown"
+                                :src="getCharacterImageUrl(charId)"
+                                :alt="findCharacterName(charId)"
+                                class="max-h-[80%] max-w-[30%] object-contain mx-[2%]"
+                                @error="($event.target as HTMLImageElement).style.display = 'none'"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Dialogue Box -->
+                    <div class="absolute bottom-0 left-0 right-0 z-[10] min-h-[200px]" style="background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 80%, transparent 100%); padding: 20px 40px 30px;">
+                        <div 
+                            v-if="speakerName"
+                            class="text-lg font-bold text-purple-400 mb-2.5 px-4 py-1.5 bg-purple-500/20 rounded inline-block"
+                        >
+                            {{ speakerName }}
+                        </div>
+                        <div class="text-base leading-relaxed min-h-[60px]">
+                            <template v-if="isEndOfChapter">
+                                <span class="text-gray-400">— 章节结束 —</span>
+                            </template>
+                            <template v-else>
+                                {{ dialogueText }}
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Click Indicator -->
+                    <div 
+                        v-if="showClickIndicator && !isEndOfChapter"
+                        class="absolute bottom-[220px] right-10 text-white/50 text-sm animate-pulse z-[15]"
+                    >
+                        点击继续 ▼
+                    </div>
+                </template>
+            </div>
+
+            <!-- Footer -->
+            <div class="px-4 py-2 bg-gray-800 border-t border-gray-700 flex items-center justify-between text-xs text-gray-500">
+                <div class="flex items-center gap-4">
+                    <span class="flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                        实时预览
+                    </span>
+                    <span v-if="Object.keys(chapters).length > 0">{{ Object.keys(chapters).length }} 章节</span>
+                    <span v-if="currentChapter">{{ currentChapter }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<style scoped>
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.animate-pulse {
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+</style>
