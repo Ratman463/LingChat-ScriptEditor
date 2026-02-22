@@ -43,7 +43,7 @@ async function fetchResources() {
             const res = await fetch(`${apiBaseUrl}/api/scripts/${scriptId}/characters`)
             if (res.ok) {
                 const data = await res.json()
-                resources.value = data.map((c: any) => c.name || c.id || c._path)
+                resources.value = data.map((c: any) => c)
             }
         } else {
             // Use assets from store
