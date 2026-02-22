@@ -511,6 +511,7 @@ onUnmounted(() => {
                             v-for="(emotion, charId) in currentCharacters" 
                             :key="charId"
                             class="character-container h-full"
+                            style="display: flex; justify-content: space-between;"
                         >
                             <img 
                                 v-if="emotion"
