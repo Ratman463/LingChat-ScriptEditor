@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { useScriptStore } from '@/stores/script'
-import { onMounted, computed, ref } from 'vue'
+import { useToast } from '@/composables/useToast'
+import { onMounted, onUnmounted, computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ChapterFlowCanvas from '../components/ChapterFlowCanvas.vue'
+import GamePreview from '../components/GamePreview.vue'
 import { apiBaseUrl } from '@/config/api'
 
+const toast = useToast()
 const router = useRouter()
 
 // Helper function to get full API URL
@@ -22,25 +25,33 @@ const chapterFlowCanvasRef = ref()
 const showAddChapterDialog = ref(false)
 const newChapterPath = ref('')
 
+// State for preview panel
+const showPreview = ref(false)
+
+function togglePreview() {
+    showPreview.value = !showPreview.value
+}
+
 onMounted(() => {
   const id = route.params.scriptId as string
   if (id) {
     scriptStore.loadScript(id)
   }
+  window.addEventListener('keydown', handleKeydown)
 })
 
 async function save() {
     try {
         const scriptId = scriptStore.currentScript?.id
         if (!scriptId) {
-            alert('未找到当前脚本')
+            toast.error('未找到当前脚本')
             return
         }
 
         // Get loaded chapters from the canvas component
         const loadedChapters = chapterFlowCanvasRef.value?.getLoadedChapters()
         if (!loadedChapters || Object.keys(loadedChapters).length === 0) {
-            alert('没有可保存的章节数据')
+            toast.warning('没有可保存的章节数据')
             return
         }
 
@@ -76,15 +87,15 @@ async function save() {
 
         // Show results
         if (errorCount === 0) {
-            alert(`保存成功! 共保存了 ${successCount} 个章节`)
+            toast.success(`保存成功! 共保存了 ${successCount} 个章节`)
         } else {
-            alert(`保存完成，但有错误:\n成功: ${successCount} 个\n失败: ${errorCount} 个\n\n错误详情:\n${errors.join('\n')}`)
+            toast.error(`保存完成，但有错误:\n成功: ${successCount} 个\n失败: ${errorCount} 个\n\n错误详情:\n${errors.join('\n')}`, 8000)
         }
 
     } catch (error) {
         console.error('保存失败:', error)
         const errorMessage = error instanceof Error ? error.message : String(error)
-        alert('保存失败: ' + errorMessage)
+        toast.error('保存失败: ' + errorMessage)
     }
 }
 
@@ -95,14 +106,14 @@ function showAddChapter() {
 
 async function createNewChapter() {
     if (!newChapterPath.value.trim()) {
-        alert('请输入章节路径')
+        toast.warning('请输入章节路径')
         return
     }
     
     try {
         const scriptId = scriptStore.currentScript?.id
         if (!scriptId) {
-            alert('未找到当前脚本')
+            toast.error('未找到当前脚本')
             return
         }
         
@@ -130,11 +141,11 @@ async function createNewChapter() {
         // Close dialog
         showAddChapterDialog.value = false
         
-        console.log(`成功创建章节: ${newChapterPath.value}`)
+        toast.success(`成功创建章节: ${newChapterPath.value}`)
         
     } catch (error) {
         console.error('创建章节失败:', error)
-        alert('创建章节失败，请检查路径是否正确')
+        toast.error('创建章节失败，请检查路径是否正确')
     }
 }
 
@@ -144,8 +155,19 @@ function cancelAddChapter() {
 }
 
 function goBack() {
-    router.push('/')
+  router.push('/')
 }
+
+// Handle ESC key to close preview
+function handleKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape' && showPreview.value) {
+        showPreview.value = false
+    }
+}
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
+})
 
 </script>
 
@@ -168,6 +190,14 @@ function goBack() {
                <span class="text-gray-600">|</span>
                <button @click="save" class="text-sm font-medium text-gray-300 hover:text-white transition">全部保存</button>
                <button @click="showAddChapter" class="text-sm font-medium text-purple-300 hover:text-purple-100 transition">+ 新增章节</button>
+               <span class="text-gray-600">|</span>
+               <button @click="togglePreview" class="text-sm font-medium flex items-center space-x-1 transition" :class="showPreview ? 'text-purple-400' : 'text-gray-300 hover:text-white'">
+                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                 </svg>
+                 <span>预览</span>
+               </button>
          </div>
        </header>
        
@@ -219,5 +249,11 @@ function goBack() {
            </div>
        </div>
     </main>
+
+    <!-- Game Preview -->
+    <GamePreview 
+        :isOpen="showPreview"
+        @close="showPreview = false"
+    />
   </div>
 </template>

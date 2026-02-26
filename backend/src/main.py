@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routers import scripts, assets, characters
+from .routers import scripts, assets, characters, preview
 
 app = FastAPI(title="Script Editor API")
 
@@ -17,6 +17,7 @@ app.add_middleware(
 app.include_router(scripts.router)
 app.include_router(assets.router)
 app.include_router(characters.router)
+app.include_router(preview.router)
 
 @app.get("/")
 async def root():
