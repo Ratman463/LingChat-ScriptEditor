@@ -6,6 +6,33 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException, Body
 from typing import List, Optional, Dict, Any
 from ..models import ScriptConfig, Chapter, CreateScriptRequest
+
+# Custom YAML handling for proper formatting
+# 1. Removing null fields
+def remove_null_fields(obj):
+    if isinstance(obj, dict):
+        return {k: remove_null_fields(v) for k, v in obj.items() if v is not None}
+    elif isinstance(obj, list):
+        return [remove_null_fields(item) for item in obj]
+    return obj
+
+
+# 2. Register custom representers
+def str_representer(dumper, data):
+    # Add | if there is multiline string
+    if '\n' in data:
+        return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='|')
+    return dumper.represent_scalar('tag:yaml.org,2002:str', data)
+
+yaml.add_representer(str, str_representer)
+
+def convert_multiline_strings(obj):
+    if isinstance(obj, dict):
+        return {k: convert_multiline_strings(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_multiline_strings(item) for item in obj]
+    return obj
+
 router = APIRouter(
     prefix="/api/scripts",
     tags=["scripts"]
@@ -138,9 +165,18 @@ async def save_chapter(script_id: str, chapter_path: str, chapter: Chapter):
     chapter_file.parent.mkdir(parents=True, exist_ok=True)
     
     try:
+        chapter_data = chapter.model_dump()
+        
+        # 1. Remove all null fields from events
+        chapter_data = remove_null_fields(chapter_data)
+        
+        # 2. Convert multiline strings to use literal block scalar
+        chapter_data = convert_multiline_strings(chapter_data)
+        
         with open(chapter_file, "w", encoding="utf-8") as f:
-            # Use allow_unicode=True for Chinese support
-            yaml.dump(chapter.model_dump(), f, allow_unicode=True, sort_keys=False)
+            # Use default_flow_style=False for block formatting
+            # sort_keys=False preserves field order
+            yaml.dump(chapter_data, f, allow_unicode=True, sort_keys=False, default_flow_style=False)
         return {"status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
