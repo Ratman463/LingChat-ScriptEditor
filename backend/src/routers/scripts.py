@@ -44,6 +44,45 @@ def str_representer(dumper, data):
 
 yaml.add_representer(str, str_representer)
 
+# 3. Add blank lines between list items (events) in YAML for better readability
+def format_yaml_with_blank_lines(yaml_str: str) -> str:
+    lines = yaml_str.split('\n')
+    result = []
+    
+    for i, line in enumerate(lines):
+        # Check if this line is a list item (starts with '- ')
+        if line.startswith('- ') and i > 0:
+            # Look back to find if there was a previous list item at the same level
+            prev_idx = i - 1
+            found_previous_list_item = False
+            
+            while prev_idx >= 0:
+                prev_line = lines[prev_idx]
+                if prev_line.startswith('- '):
+                    # Found a previous list item at the same level
+                    found_previous_list_item = True
+                    break
+                elif prev_line.strip() == '':
+                    # Skip blank lines
+                    prev_idx -= 1
+                elif prev_line.startswith('  ') and not prev_line.startswith('- '):
+                    # This is a nested property of a previous list item, keep looking back
+                    prev_idx -= 1
+                elif prev_line == 'events:':
+                    # We've reached the events: header, no previous list item
+                    break
+                else:
+                    # Some other line, stop looking
+                    break
+            
+            # If we found a previous list item, add blank line before this one
+            if found_previous_list_item:
+                result.append('')
+        
+        result.append(line)
+    
+    return '\n'.join(result)
+
 def convert_multiline_strings(obj):
     if isinstance(obj, dict):
         return {k: convert_multiline_strings(v) for k, v in obj.items()}
@@ -191,10 +230,14 @@ async def save_chapter(script_id: str, chapter_path: str, chapter: Chapter):
         # 2. Convert multiline strings to use literal block scalar
         chapter_data = convert_multiline_strings(chapter_data)
         
+        # Generate YAML string first
+        yaml_str = yaml.dump(chapter_data, allow_unicode=True, sort_keys=False, default_flow_style=False)
+        
+        # Add blank lines between events for readability
+        yaml_str = format_yaml_with_blank_lines(yaml_str)
+        
         with open(chapter_file, "w", encoding="utf-8") as f:
-            # Use default_flow_style=False for block formatting
-            # sort_keys=False preserves field order
-            yaml.dump(chapter_data, f, allow_unicode=True, sort_keys=False, default_flow_style=False)
+            f.write(yaml_str)
         return {"status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
