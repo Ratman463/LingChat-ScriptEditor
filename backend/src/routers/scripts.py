@@ -111,19 +111,19 @@ if getattr(sys, 'frozen', False):
     
     BASE_DIR = None
     for p in possible_paths:
-        print(f"[Scripts] Checking for scripts at: {p}")
+        # print(f"[Scripts] Checking for scripts at: {p}")
         if p.exists():
             BASE_DIR = p
-            print(f"[Scripts] Found scripts at: {p}")
+            # print(f"[Scripts] Found scripts at: {p}")
             break
     
     if BASE_DIR is None:
         BASE_DIR = exe_dir.parent.parent / "scripts"
-        print(f"[Scripts] Defaulting scripts path to: {BASE_DIR}")
+        # print(f"[Scripts] Defaulting scripts path to: {BASE_DIR}")
 else:
     # Running from source
     BASE_DIR = Path(__file__).resolve().parent.parent.parent / "scripts"
-    print(f"[Scripts] Running from source. Scripts directory: {BASE_DIR}")
+    #print(f"[Scripts] Running from source. Scripts directory: {BASE_DIR}")
 
 def get_script_dir(script_id: str) -> Path:
     script_dir = BASE_DIR / script_id
@@ -138,7 +138,6 @@ async def list_scripts():
         return []
     
     for item in BASE_DIR.iterdir():
-        print(item)
         if item.is_dir():
             config_path = item / "story_config.yaml"
             if config_path.exists():
