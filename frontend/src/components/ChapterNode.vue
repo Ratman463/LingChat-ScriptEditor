@@ -4,6 +4,8 @@ import draggable from 'vuedraggable'
 import { EVENT_SCHEMAS } from '../config/events'
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
 import ResourceSelector from './ResourceSelector.vue'
+import DeleteChapter from './dialog/DeleteChapter.vue'
+import { DESCRIPTIONS } from './constants/event'
 
 const props = defineProps<{
     chapterPath: string
@@ -59,20 +61,7 @@ function selectEventType(type: string) {
 }
 
 function getEventDescription(type: string): string {
-    const descriptions: Record<string, string> = {
-        narration: '添加叙述文本',
-        player: '添加玩家对话',
-        dialogue: '添加角色对话',
-        ai_dialogue: '添加AI生成对话',
-        modify_character: '修改角色状态',
-        background: '设置背景图片',
-        music: '播放背景音乐',
-        input: '玩家输入事件',
-        choices: '玩家选择事件',
-        set_variable: '设置变量值',
-        chapter_end: '章节结束/跳转'
-    }
-    return descriptions[type] || '事件描述'
+    return DESCRIPTIONS[type] || '事件描述'
 }
 
 function onDragEnd(event: any) {
@@ -342,7 +331,7 @@ function cancelDelete() {
                      <!-- Add Optional Button -->
                      <div class="relative group/add inline-block mt-2">
                          <button class="text-[10px] bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded border border-gray-700">+ Add Option</button>
-                         <div class="absolute top-full left-0 bg-gray-800 border border-gray-700 rounded shadow-lg z-20 hidden group-hover/add:block min-w-[120px]">
+                         <div class="absolute top-full left-0 bg-gray-800 border border-gray-700 rounded shadow-lg hidden group-hover/add:block min-w-[120px]">
                               <div 
                                 v-for="field in getEventSchema(element.type).optional.filter(f => element[f.key] === undefined)"
                                 :key="field.key"
@@ -360,7 +349,7 @@ function cancelDelete() {
 
     <!-- Footer -->
     <div class="p-2 bg-gray-800/50 border-t border-gray-700">
-        <button @click="handleAddEvent" class="w-full py-1.5 rounded border border-dashed border-gray-600 text-gray-500 hover:text-purple-400 hover:border-purple-500/50 text-xs transition">+ Add Event</button>
+        <button @click="handleAddEvent" class="w-full py-1.5 rounded border border-dashed border-gray-600 text-gray-500 hover:text-purple-400 hover:border-purple-500/50 text-xs transition">+ 新增事件</button>
     </div>
 
     <!-- Event Type Dialog -->
@@ -421,38 +410,11 @@ function cancelDelete() {
     ></div>
 
     <!-- Delete Confirmation Dialog -->
-    <div v-if="showDeleteDialog" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div class="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl w-full max-w-md">
-            <div class="p-4 border-b border-gray-700">
-                <h3 class="text-lg font-bold text-gray-200">确认删除章节</h3>
-                <p class="text-sm text-gray-400 mt-1">确定要删除章节 "{{ chapterPath }}" 吗？此操作无法撤销。</p>
-            </div>
-            
-            <div class="p-4 space-y-4">
-                <div class="bg-red-900/20 border border-red-500/30 rounded-lg p-3">
-                    <div class="flex items-center space-x-2">
-                        <div class="w-3 h-3 rounded-full bg-red-500"></div>
-                        <span class="text-sm font-medium text-red-400">警告</span>
-                    </div>
-                    <p class="text-xs text-gray-400 mt-1">删除后，该章节的所有事件将被永久移除。</p>
-                </div>
-            </div>
-            
-            <div class="p-4 border-t border-gray-700 flex justify-end space-x-3">
-                <button 
-                    @click="cancelDelete"
-                    class="px-4 py-2 text-gray-400 hover:text-gray-200 transition-colors border border-gray-600 rounded"
-                >
-                    取消
-                </button>
-                <button 
-                    @click="confirmDelete"
-                    class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
-                >
-                    确定删除
-                </button>
-            </div>
-        </div>
-    </div>
+    <DeleteChapter
+        :show-delete-dialog="showDeleteDialog" 
+        :chapter-path="chapterPath"
+        @cancel-delete="cancelDelete"
+        @confirm-delete="confirmDelete"
+    />
   </div>
 </template>
