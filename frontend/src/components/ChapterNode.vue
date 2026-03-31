@@ -4,6 +4,7 @@ import draggable from 'vuedraggable'
 import ResourceSelector from './common/ResourceSelector.vue'
 import DeleteChapter from './dialog/DeleteChapter.vue'
 import { DESCRIPTIONS, EVENT_SCHEMAS } from '../constants/events'
+import { IconClose, IconDragHandle, IconChevronRight } from '@/assets/icons'
 
 const props = defineProps<{
     chapterPath: string
@@ -91,9 +92,7 @@ function cancelDelete() {
         <div class="flex items-center space-x-2">
             <div class="text-[10px] text-gray-500">{{ events.length }} events</div>
             <button @click="showDeleteDialog = true" class="ml-2 group-hover:opacity-100 transition-opacity bg-red-500/20 hover:bg-red-500/40 border border-red-500/30 rounded p-1" title="删除章节">
-                <svg class="w-3 h-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
+                <IconClose class="w-3 h-3 text-red-400" />
             </button>
         </div>
     </div>
@@ -114,7 +113,7 @@ function cancelDelete() {
                 <!-- Compact Row -->
                 <div class="flex items-center p-2 cursor-pointer hover:bg-white/5 group" @click="toggleEvent(index)">
                     <div class="event-handle cursor-move mr-2 opacity-0 group-hover:opacity-50 hover:opacity-100" @mousedown.stop>
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
+                        <IconDragHandle class="w-3 h-3" />
                     </div>
                     
                     <span class="font-bold uppercase opacity-70 mr-2 min-w-[60px] text-[10px]">{{ getEventSchema(element.type).label }}</span>
@@ -132,9 +131,7 @@ function cancelDelete() {
                         class="ml-2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500/20 hover:bg-red-500/40 border border-red-500/30 rounded p-1"
                         title="Delete Event"
                     >
-                        <svg class="w-3 h-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
+                        <IconClose class="w-3 h-3 text-red-400" />
                     </button>
                 </div>
 
@@ -374,9 +371,7 @@ function cancelDelete() {
                         <div class="text-xs text-gray-400">{{ getEventDescription(type) }}</div>
                     </div>
                     <div class="text-xs text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                        </svg>
+                        <IconChevronRight class="w-4 h-4" />
                     </div>
                 </div>
             </div>
