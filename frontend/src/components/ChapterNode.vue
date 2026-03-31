@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import draggable from 'vuedraggable'
-import ResourceSelector from './ResourceSelector.vue'
+import ResourceSelector from './common/ResourceSelector.vue'
 import DeleteChapter from './dialog/DeleteChapter.vue'
-import { DESCRIPTIONS, EVENT_SCHEMAS } from './constants/events'
+import { DESCRIPTIONS, EVENT_SCHEMAS } from '../constants/events'
 
 const props = defineProps<{
     chapterPath: string
