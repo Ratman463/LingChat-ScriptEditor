@@ -447,7 +447,7 @@ onMounted(() => {
           </div>
           
           <div v-if="isLoading" class="message assistant">
-            <div class="message-avatar">🤖</div>
+            <div class="message-avatar">🐈</div>
             <div class="message-content">
               <div class="loading-dots">
                 <span></span><span></span><span></span>
