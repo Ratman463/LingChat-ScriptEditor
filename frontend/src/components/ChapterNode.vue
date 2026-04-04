@@ -11,6 +11,7 @@ const props = defineProps<{
     events: any[]
     x?: number
     y?: number
+    isSelected?: boolean
 }>()
 
 const emit = defineEmits(['update:events', 'select', 'delete', 'add-event', 'toggle-expand', 'start-connection', 'end-connection', 'delete-event', 'swap-events', 'delete-chapter'])
@@ -79,7 +80,8 @@ function cancelDelete() {
 
 <template>
   <div 
-    class="absolute w-80 rounded-xl border border-gray-700 bg-gray-900/90 shadow-2xl backdrop-blur flex flex-col overflow-visible"
+    class="absolute w-80 rounded-xl border bg-gray-900/90 shadow-2xl backdrop-blur flex flex-col overflow-visible transition-all duration-200"
+    :class="isSelected ? 'border-purple-500 ring-2 ring-purple-500/50 shadow-purple-500/20' : 'border-gray-700'"
     :style="{ left: (x || 0) + 'px', top: (y || 0) + 'px' }"
     @mousedown.stop="$emit('select', $event)"
   >
